@@ -1,14 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="http://samsung.tv/DoomWasm" version="1.10.2" viewmodes="fullscreen">
-    <access origin="*"></access>
-    <tizen:application id="DoomWasm.App" package="DoomWasm" required_version="5.5" launch_mode="caller"/>
+<widget xmlns:tizen="http://tizen.org/ns/widgets"
+        xmlns="http://www.w3.org/ns/widgets"
+        id="http://samsung.tv/DoomWasm"
+        version="1.10.2"
+        viewmodes="fullscreen">
+
+    <access origin="*"/>
+
+    <tizen:application
+        id="doomwasm01.Doom"
+        package="doomwasm01"
+        required_version="5.5"
+        launch_mode="caller"/>
+
     <content src="index.html"/>
     <description>Doom</description>
+
     <feature name="http://tizen.org/feature/screen.size.all"/>
     <icon src="icon.png"/>
+
     <tizen:metadata key="http://samsung.com/tv/metadata/use.voiceguide" value="false"/>
     <tizen:metadata key="http://samsung.com/tv/metadata/floating.navigation" value="false"/>
+
     <name>Doom</name>
+
     <tizen:privilege name="http://tizen.org/privilege/internet"/>
     <tizen:privilege name="http://tizen.org/privilege/fullscreen"/>
     <tizen:privilege name="http://tizen.org/privilege/system"/>
@@ -21,6 +36,15 @@
     <tizen:privilege name="http://tizen.org/privilege/ime"/>
     <tizen:privilege name="http://tizen.org/privilege/tv.audio"/>
     <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+
     <tizen:profile name="tv-samsung"/>
-    <tizen:setting screen-orientation="landscape" context-menu="enable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable" pointing-device-support="enable"/>
+
+    <tizen:setting
+        screen-orientation="landscape"
+        context-menu="enable"
+        background-support="disable"
+        encryption="disable"
+        install-location="auto"
+        hwkey-event="enable"
+        pointing-device-support="enable"/>
 </widget>
