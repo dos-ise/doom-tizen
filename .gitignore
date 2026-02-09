@@ -1,21 +1,52 @@
-autom4te.cache
-autotools
-configure
-Makefile
-aclocal.m4
-config.hin
+user-data-dir/
+pnacl/
+build/
+
+# Object files
 *.o
+*.ko
+*.obj
+*.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
 *.a
-Makefile.in
-*.wasm
-*.wasm.map
-*.js
-*.html
-*.html.symbols
-config.h
-config.log
-config.status
-stamp-h1
-clean
-src/doom1.wad
-.githelp
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+
+# NaCl SDK
+dir.stamp
+*.deps
+*.map
+*.nexe
+*.pexe
+*.nmf
+*.bc
+
+# Jetbrains IDEs
+*.idea/
+
+# Visual Studio
+*.vs/
+*.vscode/
