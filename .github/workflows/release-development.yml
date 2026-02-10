@@ -119,7 +119,7 @@ jobs:
           docker run -d --name temp_container $IMAGE_TAG
       - name: Copy artifacts from Docker container
         run: |
-          docker cp temp_container:/home/doom/doom.wgt .
+          docker cp temp_container:/home/doom/Doom.wgt .
       # Stops and removes the temporary Docker container to clean up resources.
       - name: Stop and remove Docker container
         run: |
