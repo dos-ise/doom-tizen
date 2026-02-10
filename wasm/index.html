@@ -70,7 +70,16 @@
     </script>
 
     <script>
-        var commonArgs = ["-iwad", "doom1.wad", "-window", "-nogui", "-nomusic", "-config", "default.cfg", "-servername", "doomflare"];
+        var commonArgs = [
+            "-iwad", "doom1.wad",
+            "-window",
+            "-nogui",
+            "-nomusic",
+            "-config", "default.cfg",
+            "-servername", "doomflare",
+            "-width", window.innerWidth.toString(),
+            "-height", window.innerHeight.toString()
+        ];
 
         var Module = {
             onRuntimeInitialized: () => {
@@ -87,10 +96,15 @@
             },
             canvas: (function () {
                 var canvas = document.getElementById("canvas");
+
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
                 canvas.addEventListener("webglcontextlost", function (e) {
                     alert("WebGL context lost. Reload required.");
                     e.preventDefault();
                 }, false);
+
                 return canvas;
             })(),
             print: function (text) {
