@@ -51,13 +51,73 @@ RUN sed -i 's|/home/doom/tizen-studio-data/tools/certificate-generator/certifica
 # Install Samsung Emscripten SDK and configure Java path for closure compiler
 RUN wget -nv -O emscripten-1.39.4.7-linux64.zip 'https://developer.samsung.com/smarttv/file/a5013a65-af11-4b59-844f-2d34f14d19a9'
 RUN unzip emscripten-1.39.4.7-linux64.zip
-WORKDIR emscripten-release-bundle/emsdk
-RUN ./emsdk activate latest-fastcomp
-RUN echo 'JAVA = "/usr/bin/java"' >> /home/doom/.emscripten
+WORKDIR /home/doom/emscripten-release-bundle/emsdk
+RUN ./emsdk activate latest-fastcomp && \
+    echo 'source /home/doom/emscripten-release-bundle/emsdk/emsdk_env.sh' >> /home/doom/.bashrc && \
+    echo 'JAVA = "/usr/bin/java"' >> /home/doom/.emscripten
+
 
 # Compile the source code and prepare the widget directory
 WORKDIR /home/doom
 COPY --chown=doom . ./doom-tizen
+
+WORKDIR /home/doom/doom-tizen
+RUN git submodule update --init --recursive
+
+#Build chocolate-doom using Emscripten
+# Build chocolate-doom using Emscripten
+WORKDIR /home/doom/doom-tizen/chocolate-doom
+
+RUN sed -i 's|joystick.c||' src/setup/CMakeLists.txt
+RUN sed -i 's|txt_joyaxis.c||' src/setup/CMakeLists.txt
+RUN sed -i 's|txt_joybutton.c||' src/setup/CMakeLists.txt
+RUN sed -i 's|txt_joyhat.c||' src/setup/CMakeLists.txt
+RUN sed -i 's|txt_joybinput.c||' src/setup/CMakeLists.txt
+RUN sed -i 's|txt_joyinput.c||' src/setup/CMakeLists.txt || true
+
+RUN sed -i 's|# i_joystick.c|i_joystick.c|' src/CMakeLists.txt || true
+RUN sed -i 's|// i_joystick.c|i_joystick.c|' src/CMakeLists.txt || true
+RUN grep -q "i_joystick.c" src/CMakeLists.txt || sed -i 's|i_input.c|i_input.c i_joystick.c|' src/CMakeLists.txt
+
+RUN printf "%s\n" \
+"void I_BindJoystickVariables(void) {}" \
+"void I_InitJoystick(void) {}" \
+"void I_UpdateJoystick(void) {}" \
+"int joystick_move_sensitivity = 0;" \
+"int joystick_turn_sensitivity = 0;" \
+"int joystick_look_sensitivity = 0;" \
+"int use_analog = 0;" \
+> src/i_joystick.c
+
+RUN printf "%s\n" \
+"void BindJoystickVariables(void) {}" \
+"void ConfigJoystick(void) {}" \
+> src/setup/joystick_dummy.c
+
+RUN sed -i 's|add_library(setup STATIC|add_library(setup STATIC joystick_dummy.c|' src/setup/CMakeLists.txt
+
+# remove flags we set them ourselves, since the old emscripten doesn't support them and they cause build errors
+RUN sed -i 's|-s EXPORTED_FUNCTIONS=_main,ccall,cwrap,FS,ENV,PATH,ERRNO_CODES||g' src/CMakeLists.txt
+# fastcomp doesn't support asyncify, and it's not needed for the target platform, so remove it
+RUN sed -i "s|-s ASYNCIFY=1||g" src/CMakeLists.txt
+
+ENV LDFLAGS="-s EXPORTED_FUNCTIONS=['_main'] -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
+ENV CFLAGS="-DDISABLE_SDL2MIXER"
+
+RUN bash -lc "source /home/doom/emscripten-release-bundle/emsdk/emsdk_env.sh && \
+    emcmake cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DWITH_SDL_MIXER=OFF \
+        -DWITH_SDL_NET=OFF \
+        -DCMAKE_EXE_LINKER_FLAGS=\"$LDFLAGS\" \
+        -G Ninja \
+        -S . \
+        -B build"
+
+RUN bash -lc "source /home/doom/emscripten-release-bundle/emsdk/emsdk_env.sh && \
+    emmake ninja -C build"
+
+WORKDIR /home/doom
 RUN cmake \
 	-DCMAKE_TOOLCHAIN_FILE=/home/doom/emscripten-release-bundle/emsdk/fastcomp/emscripten/cmake/Modules/Platform/Emscripten.cmake \
 	-G Ninja \
