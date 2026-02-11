@@ -117,6 +117,9 @@ RUN bash -lc "source /home/doom/emscripten-release-bundle/emsdk/emsdk_env.sh && 
 RUN bash -lc "source /home/doom/emscripten-release-bundle/emsdk/emsdk_env.sh && \
     emmake ninja -C build"
 
+RUN cp /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js /home/doom/doom-tizen/wasm/
+RUN cp /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm /home/doom/doom-tizen/wasm/
+
 WORKDIR /home/doom
 RUN cmake \
 	-DCMAKE_TOOLCHAIN_FILE=/home/doom/emscripten-release-bundle/emsdk/fastcomp/emscripten/cmake/Modules/Platform/Emscripten.cmake \
