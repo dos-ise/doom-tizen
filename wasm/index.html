@@ -21,7 +21,6 @@
             font-family: "VT323", monospace;
         }
 
-        /* Fullscreen canvas */
         canvas#canvas {
             position: fixed;
             top: 0;
@@ -31,7 +30,6 @@
             background: black;
         }
 
-        /* Console output hidden but still present */
         #errlog {
             display: none;
         }
@@ -40,8 +38,6 @@
 </head>
 <body>
     <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
-
-    <!-- Hidden console overlay -->
     <div id="errlog"></div>
 
     <script>
@@ -70,43 +66,35 @@
     </script>
 
     <script>
-        var commonArgs = ["-iwad", "doom1.wad", "-window", "-nogui", "-config", "default.cfg", "-servername", "doomflare"];
+        // Load file into Emscripten FS BEFORE starting Doom
+        async function loadFileToFS(url, path) {
+            const response = await fetch(url);
+            const data = new Uint8Array(await response.arrayBuffer());
+            Module.FS.writeFile(path, data);
+        }
 
+        // We will manually start Doom AFTER runtime is ready
         var Module = {
-            onRuntimeInitialized: () => {
-                callMain(commonArgs);
-            },
+            locateFile: (path) => path,
             noInitialRun: true,
-            preRun: () => {
-                Module.FS.createPreloadedFile("", "doom1.wad", "doom1.wad", true, true);
-                Module.FS.createPreloadedFile("", "default.cfg", "default.cfg", true, true);
+
+            canvas: document.getElementById("canvas"),
+
+            print: (t) => console.log(t),
+            printErr: (t) => console.error(t),
+
+            onRuntimeInitialized: async () => {
+                console.log("Runtime ready, loading WAD...");
+
+                await loadFileToFS("doom1.wad", "doom1.wad");
+                await loadFileToFS("default.cfg", "default.cfg");
+
+                console.log("Files loaded, starting Doom...");
+                callMain(["-iwad", "doom1.wad", "-window", "-nogui", "-config", "default.cfg"]);
             },
-            printErr: function (text) {
-                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(" ");
-                console.error(text);
-            },
-            canvas: (function () {
-                var canvas = document.getElementById("canvas");
-                canvas.addEventListener("webglcontextlost", function (e) {
-                    alert("WebGL context lost. Reload required.");
-                    e.preventDefault();
-                }, false);
-                return canvas;
-            })(),
-            print: function (text) {
-                console.log(text);
-            },
-            setStatus: function (text) {
-                console.log(text);
-            },
-            totalDependencies: 0,
-            monitorRunDependencies: function (left) {
-                this.totalDependencies = Math.max(this.totalDependencies, left);
-                Module.setStatus(left ? "Preparing... (" + (this.totalDependencies - left) + "/" + this.totalDependencies + ")" : "All downloads complete.");
-            },
+
             onExit: function (code) {
                 try {
-                    //alert("exit");
                     tizen.application.getCurrentApplication().exit();
                 } catch (e) {
                     console.log("Tizen exit failed:", e);
@@ -114,7 +102,6 @@
             }
         };
     </script>
-
 
     <script src="chocolate-doom.js"></script>
     <script src="input.js"></script>
