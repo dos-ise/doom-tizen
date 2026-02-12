@@ -68,6 +68,12 @@ RUN git submodule update --init --recursive
 # Build chocolate-doom using Emscripten
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 
+# nur DOOM bauen: alle anderen Executables komplett aus src/CMakeLists.txt entfernen
+RUN sed -i '/add_executable(chocolate-server/,/install(TARGETS chocolate-server/d' src/CMakeLists.txt
+RUN sed -i '/add_executable(chocolate-heretic/,/install(TARGETS chocolate-heretic/d' src/CMakeLists.txt
+RUN sed -i '/add_executable(chocolate-hexen/,/install(TARGETS chocolate-hexen/d' src/CMakeLists.txt
+RUN sed -i '/add_executable(chocolate-strife/,/install(TARGETS chocolate-strife/d' src/CMakeLists.txt
+
 RUN sed -i 's|joystick.c||' src/setup/CMakeLists.txt
 RUN sed -i 's|txt_joyaxis.c||' src/setup/CMakeLists.txt
 RUN sed -i 's|txt_joybutton.c||' src/setup/CMakeLists.txt
@@ -78,6 +84,9 @@ RUN sed -i 's|txt_joyinput.c||' src/setup/CMakeLists.txt || true
 RUN sed -i 's|# i_joystick.c|i_joystick.c|' src/CMakeLists.txt || true
 RUN sed -i 's|// i_joystick.c|i_joystick.c|' src/CMakeLists.txt || true
 RUN grep -q "i_joystick.c" src/CMakeLists.txt || sed -i 's|i_input.c|i_input.c i_joystick.c|' src/CMakeLists.txt
+
+RUN sed -i 's/stricmp/strcasecmp/g' src/doomtype.h
+RUN sed -i 's/strnicmp/strncasecmp/g' src/doomtype.h
 
 RUN printf "%s\n" \
 "void I_BindJoystickVariables(void) {}" \
@@ -101,7 +110,11 @@ RUN sed -i 's|-s EXPORTED_FUNCTIONS=_main,ccall,cwrap,FS,ENV,PATH,ERRNO_CODES||g
 # fastcomp doesn't support asyncify, and it's not needed for the target platform, so remove it
 RUN sed -i "s|-s ASYNCIFY=1||g" src/CMakeLists.txt
 
-ENV LDFLAGS="-s EXPORTED_FUNCTIONS=['_main'] -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
+ENV LDFLAGS="\
+-s EXPORTED_FUNCTIONS=['_main'] \
+-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap'] \
+--preload-file ../doom1.wad@doom1.wad \
+--preload-file ../default.cfg@default.cfg"
 ENV CFLAGS="-DDISABLE_SDL2MIXER"
 
 RUN bash -lc "source /home/doom/emscripten-release-bundle/emsdk/emsdk_env.sh && \
