@@ -1,130 +1,177 @@
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
-    <title>Websockets Doom</title>
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+    <title>Doom</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
     <style>
-        @font-face {
-            font-family: "VT323";
-            font-style: normal;
-            font-weight: 400;
-            src: url(https://fonts.gstatic.com/s/vt323/v12/pxiKyp0ihIEF2isfFJXUdVNF.woff2) format("woff2");
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         html, body {
-            margin: 0;
-            padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
             background: #000;
-            font-family: "VT323", monospace;
+            font-family: monospace;
         }
 
-        canvas#canvas {
-            position: fixed;
+        #canvas {
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: black;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            will-change: contents;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
 
-        #errlog {
-            display: none;
+        #status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0f0;
+            font-size: 20px;
+            text-align: center;
+            z-index: 100;
+            text-shadow: 0 0 10px #0f0;
         }
     </style>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
 </head>
 <body>
-    <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
-    <div id="errlog"></div>
-
+    <canvas id="canvas" tabindex="1"></canvas>
+    <div id="status">Loading Doom...</div>
+    <script src="input.js"/></script>
     <script>
-        let ctx = document.getElementById('canvas').getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.font = '20px Arial';
-        ctx.fillText("Please wait...", 20, 40);
+        'use strict';
 
-        let c = 0;
-        function adde(t) {
-            if (c++ > 50) {
-                document.getElementById('errlog').innerText = "";
-                c = 0;
+        const statusElement = document.getElementById('status');
+        const canvasElement = document.getElementById('canvas');
+
+        // Tizen-spezifische Initialisierung
+        function initTizen() {
+            try {
+                if (window.tizen && tizen.power) {
+                    tizen.power.request('SCREEN', 'SCREEN_NORMAL');
+                    console.log('Tizen power management activated');
+                }
+            } catch (e) {
+                console.log('Tizen API not available:', e);
             }
-            document.getElementById('errlog').innerText += `${t}\n`;
         }
 
-        window.onerror = function (error, url, line) {
-            console.error('caught error:', error, url, line);
-            adde(`${url}:${line}: ${error}`);
-        };
-
-        console.log = function (...t) {
-            adde(t.join(', '));
-        };
-    </script>
-
-    <script>
-        var commonArgs = [
-            "-iwad", "doom1.wad",
-            "-window",
-            "-nogui",
-            "-nomusic",
-            "-config", "default.cfg",
-            "-servername", "doomflare",
-            "-width", window.innerWidth.toString(),
-            "-height", window.innerHeight.toString()
-        ];
+        initTizen();
 
         var Module = {
-            onRuntimeInitialized: async () => {
-                await callMain(commonArgs);
-            },
-            noInitialRun: true,
+            arguments: [
+                "-iwad", "doom1.wad",
+                "-window",
+                "-nogui",
+                "-nomusic",
+                "-config", "default.cfg",
+                "-width", window.innerWidth.toString(),
+                "-height", window.innerHeight.toString()
+            ],
+
             preRun: [
                 function () {
-                    // Modern Emscripten: Module.FS
-                    Module.FS.createPreloadedFile("/", "doom1.wad", "doom1.wad", true, false);
-                    Module.FS.createPreloadedFile("/", "default.cfg", "default.cfg", true, false);
+                    console.log('preRun: Loading game files...');
+                    try {
+                        // Lade WAD und Config ins virtuelle Dateisystem
+                        Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
+                        Module.FS_createPreloadedFile('/', 'default.cfg', 'default.cfg', true, false);
+                        console.log('Files loaded successfully');
+                    } catch (e) {
+                        console.error('Error loading files:', e);
+                        Module.setStatus('Error loading game files');
+                    }
                 }
             ],
-            printErr: function (text) {
-                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(" ");
-                console.error(text);
-            },
-            canvas: (function () {
-                var canvas = document.getElementById("canvas");
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                canvas.addEventListener("webglcontextlost", function (e) {
-                    alert("WebGL context lost. Reload required.");
-                    e.preventDefault();
-                }, false);
-                return canvas;
-            })(),
+
+            postRun: [],
+
             print: function (text) {
-                console.log(text);
+                console.log('[stdout]', text);
             },
+
+            printErr: function (text) {
+                console.error('[stderr]', text);
+            },
+
+            canvas: canvasElement,
+
             setStatus: function (text) {
-                console.log(text);
+                if (text) {
+                    console.log('Status:', text);
+                    statusElement.textContent = text;
+                    statusElement.style.display = 'block';
+                } else {
+                    statusElement.style.display = 'none';
+                }
             },
+
             totalDependencies: 0,
+
             monitorRunDependencies: function (left) {
                 this.totalDependencies = Math.max(this.totalDependencies, left);
-                Module.setStatus(left ? "Preparing... (" + (this.totalDependencies - left) + "/" + this.totalDependencies + ")" : "All downloads complete.");
+                Module.setStatus(
+                    left
+                        ? 'Loading... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')'
+                        : 'Starting game...'
+                );
             },
+
+            onRuntimeInitialized: function () {
+                console.log('Runtime initialized successfully');
+                Module.setStatus('');
+                canvasElement.focus();
+            },
+
+            onAbort: function (what) {
+                console.error('Abort:', what);
+                Module.setStatus('Game crashed: ' + what);
+            },
+
             onExit: function (code) {
+                console.log('Game exited with code:', code);
+                Module.setStatus('Game exited');
                 try {
-                    tizen.application.getCurrentApplication().exit();
+                    if (window.tizen && tizen.application) {
+                        tizen.application.getCurrentApplication().exit();
+                    }
                 } catch (e) {
-                    console.log("Tizen exit failed:", e);
+                    console.log('Tizen exit failed:', e);
                 }
             }
         };
+
+        // Fehlerbehandlung
+        window.onerror = function (message, source, lineno, colno, error) {
+            console.error('Global error:', message, 'at', source, lineno, colno);
+            Module.setStatus('Error: ' + message);
+            return false;
+        };
+
+        // Canvas-Fokus für Keyboard-Input
+        canvasElement.addEventListener('click', function () {
+            canvasElement.focus();
+        });
+
+        // Verhindere Kontextmenü
+        canvasElement.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            return false;
+        });
     </script>
 
-    <script src="chocolate-doom.js"></script>
-    <script src="input.js"></script>
+    <script async src="chocolate-doom.js"></script>
 </body>
 </html>
