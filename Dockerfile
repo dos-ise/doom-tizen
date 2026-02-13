@@ -68,12 +68,6 @@ RUN git submodule update --init --recursive
 # Build chocolate-doom using Emscripten
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 
-# nur DOOM bauen: alle anderen Executables komplett aus src/CMakeLists.txt entfernen
-RUN sed -i '/add_executable(chocolate-server/,/install(TARGETS chocolate-server/d' src/CMakeLists.txt
-RUN sed -i '/add_executable(chocolate-heretic/,/install(TARGETS chocolate-heretic/d' src/CMakeLists.txt
-RUN sed -i '/add_executable(chocolate-hexen/,/install(TARGETS chocolate-hexen/d' src/CMakeLists.txt
-RUN sed -i '/add_executable(chocolate-strife/,/install(TARGETS chocolate-strife/d' src/CMakeLists.txt
-
 RUN sed -i 's|joystick.c||' src/setup/CMakeLists.txt
 RUN sed -i 's|txt_joyaxis.c||' src/setup/CMakeLists.txt
 RUN sed -i 's|txt_joybutton.c||' src/setup/CMakeLists.txt
@@ -112,9 +106,7 @@ RUN sed -i "s|-s ASYNCIFY=1||g" src/CMakeLists.txt
 
 ENV LDFLAGS="\
 -s EXPORTED_FUNCTIONS=['_main'] \
--s EXPORTED_RUNTIME_METHODS=['ccall','cwrap'] \
---preload-file ../doom1.wad@doom1.wad \
---preload-file ../default.cfg@default.cfg"
+-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
 ENV CFLAGS="-DDISABLE_SDL2MIXER"
 
 RUN bash -lc "source /home/doom/emscripten-release-bundle/emsdk/emsdk_env.sh && \

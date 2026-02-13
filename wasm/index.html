@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en-us">
 <head>
     <title>Websockets Doom</title>
@@ -86,10 +86,12 @@
                 callMain(commonArgs);
             },
             noInitialRun: true,
-            preRun: () => {
-                Module.FS.createPreloadedFile("", "doom1.wad", "doom1.wad", true, true);
-                Module.FS.createPreloadedFile("", "default.cfg", "default.cfg", true, true);
-            },
+            preRun: [
+                function () {
+                    FS.createPreloadedFile("/", "doom1.wad", "doom1.wad", true, false);
+                    FS.createPreloadedFile("/", "default.cfg", "default.cfg", true, false);
+                }
+            ],
             printErr: function (text) {
                 if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(" ");
                 console.error(text);
@@ -99,7 +101,6 @@
 
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
-
                 canvas.addEventListener("webglcontextlost", function (e) {
                     alert("WebGL context lost. Reload required.");
                     e.preventDefault();
@@ -119,17 +120,16 @@
                 Module.setStatus(left ? "Preparing... (" + (this.totalDependencies - left) + "/" + this.totalDependencies + ")" : "All downloads complete.");
             },
             onExit: function (code) {
-                try {
-                    //alert("exit");
-                    tizen.application.getCurrentApplication().exit();
-                } catch (e) {
+                try
+                {
+                    tizen.application.getCurrentApplication().exit();                       
+                } catch (e)
+                {
                     console.log("Tizen exit failed:", e);
                 }
             }
         };
     </script>
-
-
     <script src="chocolate-doom.js"></script>
     <script src="input.js"></script>
 </body>
