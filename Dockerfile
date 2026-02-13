@@ -59,10 +59,6 @@ RUN git submodule update --init --recursive
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 
-# FIX: Ersetze Windows-spezifische String-Funktionen
-RUN sed -i 's/stricmp/strcasecmp/g' src/doomtype.h
-RUN sed -i 's/strnicmp/strncasecmp/g' src/doomtype.h
-
 # Optimierte Flags für Tizen (OHNE preload-file)
 ENV EMSCRIPTEN_FLAGS="\
 -s WASM=1 \
@@ -81,7 +77,7 @@ ENV EMSCRIPTEN_FLAGS="\
 -s ASSERTIONS=0 \
 -s DISABLE_EXCEPTION_CATCHING=1"
 
-ENV CFLAGS="-O3 -flto"
+ENV CFLAGS="-O3 -flto -DHAVE_DECL_STRCASECMP=1 -DHAVE_DECL_STRNCASECMP=1"
 ENV CXXFLAGS="-O3 -flto"
 ENV LDFLAGS="$EMSCRIPTEN_FLAGS -O3 -flto"
 

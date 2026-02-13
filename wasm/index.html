@@ -31,6 +31,8 @@
             will-change: contents;
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
 
         #status {
@@ -49,26 +51,14 @@
 <body>
     <canvas id="canvas" tabindex="1"></canvas>
     <div id="status">Loading Doom...</div>
-    <script src="input.js"/></script>
+
+    <script src="input.js"></script>
+
     <script>
         'use strict';
 
         const statusElement = document.getElementById('status');
         const canvasElement = document.getElementById('canvas');
-
-        // Tizen-spezifische Initialisierung
-        function initTizen() {
-            try {
-                if (window.tizen && tizen.power) {
-                    tizen.power.request('SCREEN', 'SCREEN_NORMAL');
-                    console.log('Tizen power management activated');
-                }
-            } catch (e) {
-                console.log('Tizen API not available:', e);
-            }
-        }
-
-        initTizen();
 
         var Module = {
             arguments: [
@@ -85,7 +75,6 @@
                 function () {
                     console.log('preRun: Loading game files...');
                     try {
-                        // Lade WAD und Config ins virtuelle Dateisystem
                         Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
                         Module.FS_createPreloadedFile('/', 'default.cfg', 'default.cfg', true, false);
                         console.log('Files loaded successfully');
@@ -106,7 +95,18 @@
                 console.error('[stderr]', text);
             },
 
-            canvas: canvasElement,
+            canvas: (function () {
+                canvasElement.addEventListener("webglcontextlost", function (e) {
+                    alert('WebGL context lost. You will need to reload the page.');
+                    e.preventDefault();
+                }, false);
+
+                canvasElement.addEventListener("webglcontextrestored", function (e) {
+                    console.log('WebGL context restored');
+                }, false);
+
+                return canvasElement;
+            })(),
 
             setStatus: function (text) {
                 if (text) {
@@ -133,6 +133,7 @@
                 console.log('Runtime initialized successfully');
                 Module.setStatus('');
                 canvasElement.focus();
+                setupRemoteControl();
             },
 
             onAbort: function (what) {
@@ -153,22 +154,23 @@
             }
         };
 
-        // Fehlerbehandlung
         window.onerror = function (message, source, lineno, colno, error) {
             console.error('Global error:', message, 'at', source, lineno, colno);
             Module.setStatus('Error: ' + message);
             return false;
         };
 
-        // Canvas-Fokus für Keyboard-Input
         canvasElement.addEventListener('click', function () {
             canvasElement.focus();
         });
 
-        // Verhindere Kontextmenü
         canvasElement.addEventListener('contextmenu', function (e) {
             e.preventDefault();
             return false;
+        });
+
+        window.addEventListener('load', function () {
+            canvasElement.focus();
         });
     </script>
 

@@ -1,209 +1,187 @@
 'use strict';
 
-// Tizen TV Key Mapping
-const TizenKeys = {
-    37: 'ArrowLeft',
-    38: 'ArrowUp',
-    39: 'ArrowRight',
-    40: 'ArrowDown',
-    13: 'Enter',
-    10009: 'Back',
-    427: 'ColorF0Red',
-    428: 'ColorF1Green',
-    429: 'ColorF2Yellow',
-    430: 'ColorF3Blue',
-    415: 'MediaPlay',
-    19: 'MediaPause',
-    412: 'MediaRewind',
-    417: 'MediaFastForward'
+console.log('input.js loaded');
+
+// Samsung TV Key Codes
+var tvKey = {
+    KEY_LEFT: 37,
+    KEY_UP: 38,
+    KEY_RIGHT: 39,
+    KEY_DOWN: 40,
+    KEY_ENTER: 13,
+    KEY_RETURN: 10009,
+    KEY_RED: 403,
+    KEY_GREEN: 404,
+    KEY_YELLOW: 405,
+    KEY_BLUE: 406,
+    KEY_PLAY: 415,
+    KEY_PAUSE: 19,
+    KEY_REWIND: 412,
+    KEY_FAST_FORWARD: 417,
+    KEY_CHANNEL_UP: 427,
+    KEY_CHANNEL_DOWN: 428
 };
 
 // Tizen-spezifische Initialisierung
 function initTizen() {
+    console.log('initTizen() called');
     try {
         if (window.tizen && tizen.tvinputdevice) {
-            // Registriere benötigte Keys
             var supportedKeys = [
-                'MediaPlay',
-                'MediaPause',
-                'MediaRewind',
-                'MediaFastForward',
                 'ColorF0Red',
                 'ColorF1Green',
                 'ColorF2Yellow',
-                'ColorF3Blue'
+                'ColorF3Blue',
+                'MediaPlay',
+                'MediaPause',
+                'MediaRewind',
+                'MediaFastForward'
             ];
             supportedKeys.forEach(function (key) {
-                tizen.tvinputdevice.registerKey(key);
+                try {
+                    tizen.tvinputdevice.registerKey(key);
+                    console.log('Registered key:', key);
+                } catch (e) {
+                    console.log('Failed to register key:', key, e);
+                }
             });
-            console.log('Tizen keys registered');
         }
 
         if (window.tizen && tizen.power) {
             tizen.power.request('SCREEN', 'SCREEN_NORMAL');
             console.log('Tizen power management activated');
+
+            setInterval(function () {
+                tizen.power.request('SCREEN', 'SCREEN_NORMAL');
+            }, 30000);
         }
     } catch (e) {
-        console.log('Tizen API not available:', e);
+        console.log('Tizen API error:', e);
     }
 }
 
 // Samsung Remote Control Handler
 function setupRemoteControl() {
-    console.log('Setting up remote control');
+    console.log('setupRemoteControl() called');
 
     var canvasElement = document.getElementById('canvas');
 
-    // Simuliere Tastendruck im Canvas
-    function simulateKey(key, type) {
-        var event = new KeyboardEvent(type, {
-            key: key,
-            code: key,
-            keyCode: getKeyCode(key),
-            which: getKeyCode(key),
-            bubbles: true,
-            cancelable: true
-        });
-        canvasElement.dispatchEvent(event);
+    if (!canvasElement) {
+        console.error('Canvas element not found!');
+        return;
     }
 
-    // Simuliere mehrere Tasten gleichzeitig
-    function simulateMultipleKeys(keys, type) {
-        keys.forEach(function (key) {
-            simulateKey(key, type);
-        });
+    console.log('Canvas element found');
+
+    // Erstelle KeyboardEvent
+    function createKeyEvent(type, keyCode, key) {
+        var event;
+        try {
+            event = new KeyboardEvent(type, {
+                key: key,
+                code: key,
+                keyCode: keyCode,
+                which: keyCode,
+                charCode: keyCode,
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+        } catch (e) {
+            event = document.createEvent('KeyboardEvent');
+            if (event.initKeyboardEvent) {
+                event.initKeyboardEvent(type, true, true, window, key, 0, '', false, '');
+            }
+            Object.defineProperty(event, 'keyCode', { get: function () { return keyCode; } });
+            Object.defineProperty(event, 'which', { get: function () { return keyCode; } });
+        }
+        return event;
     }
 
-    function getKeyCode(key) {
-        var keyCodes = {
-            'ArrowLeft': 37,
-            'ArrowUp': 38,
-            'ArrowRight': 39,
-            'ArrowDown': 40,
-            'Enter': 13,
-            ' ': 32,
-            'Escape': 27,
-            'y': 89,
-            'Y': 89,
-            'n': 78,
-            'N': 78,
-            'Control': 17,
-            'Shift': 16,
-            'Tab': 9,
-            '1': 49,
-            '2': 50,
-            '3': 51,
-            '4': 52,
-            ',': 188,
-            '.': 190
-        };
-        return keyCodes[key] || 0;
-    }
+    // Key-Mapping Tabelle - EINE Taste pro Funktion!
+    var keyMappings = {
+        // Navigation - Pfeiltasten werden durchgelassen (siehe unten)
 
-    // Haupt-Tastatur-Handler
+        // OK -> Enter (Menü bestätigen)
+        13: { keyCode: 13, key: 'Enter' },
+        32: { keyCode: 13, key: 'Enter' },
+
+        // RETURN -> Escape (Zurück/Menü)
+        10009: { keyCode: 27, key: 'Escape' },
+
+        // CHANNEL UP -> Space (Schießen)
+        427: { keyCode: 32, key: ' ' },
+
+        // CHANNEL DOWN -> Y (Quit bestätigen)
+        428: { keyCode: 89, key: 'y' },
+
+        // Farbtasten -> Waffen
+        403: { keyCode: 49, key: '1' },  // RED -> Waffe 1
+        404: { keyCode: 50, key: '2' },  // GREEN -> Waffe 2
+        405: { keyCode: 51, key: '3' },  // YELLOW -> Waffe 3
+        406: { keyCode: 52, key: '4' },  // BLUE -> Waffe 4
+
+        // Media-Tasten
+        415: { keyCode: 9, key: 'Tab' },     // PLAY -> Map
+        412: { keyCode: 188, key: ',' },     // REWIND -> Strafe links
+        417: { keyCode: 190, key: '.' }      // FAST FORWARD -> Strafe rechts
+    };
+
     document.addEventListener('keydown', function (e) {
-        console.log('Key down:', e.keyCode, e.key);
+        console.log('=== KEYDOWN ===');
+        console.log('keyCode:', e.keyCode, 'key:', e.key);
 
-        var mappedKey = null;
-        var mappedKeys = null; // Für mehrere Tasten
+        // Pfeiltasten (37-40) durchlassen - für Bewegung
+        if (e.keyCode >= 37 && e.keyCode <= 40) {
+            console.log('Arrow key - passing through');
+            return;
+        }
 
-        // Standard-Tasten durchreichen (A-Z, 0-9)
+        // Buchstaben (A-Z) und Zahlen (0-9) durchlassen
         if ((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 48 && e.keyCode <= 57)) {
-            canvasElement.focus();
-            return; // Lass normale Buchstaben und Zahlen durch
+            console.log('Letter/number - passing through');
+            return;
         }
 
-        // Samsung TV Remote Mapping
-        switch (e.keyCode) {
-            case 37: // LEFT
-                mappedKey = 'ArrowLeft';
-                break;
-            case 38: // UP
-                mappedKey = 'ArrowUp';
-                break;
-            case 39: // RIGHT
-                mappedKey = 'ArrowRight';
-                break;
-            case 40: // DOWN
-                mappedKey = 'ArrowDown';
-                break;
-            case 13: // OK/ENTER - Schießen (Space), Bestätigen (Enter) UND 'y' für Quit
-                mappedKeys = [' ', 'Enter', 'y'];
-                break;
-            case 10009: // RETURN/BACK - ESC Menu
-                mappedKey = 'Escape';
-                break;
-            case 427: // RED - Weapon 1
-                mappedKey = '1';
-                break;
-            case 428: // GREEN - Weapon 2
-                mappedKey = '2';
-                break;
-            case 429: // YELLOW - Weapon 3
-                mappedKey = '3';
-                break;
-            case 430: // BLUE - Weapon 4
-                mappedKey = '4';
-                break;
-            case 415: // PLAY - Map
-                mappedKey = 'Tab';
-                break;
-            case 412: // REWIND - Strafe left
-                mappedKey = ',';
-                break;
-            case 417: // FORWARD - Strafe right
-                mappedKey = '.';
-                break;
-        }
+        var mapping = keyMappings[e.keyCode];
 
-        if (mappedKeys) {
+        if (mapping) {
+            console.log('Mapping', e.keyCode, 'to', mapping.keyCode, mapping.key);
             e.preventDefault();
             e.stopPropagation();
-            simulateMultipleKeys(mappedKeys, 'keydown');
-            console.log('Mapped', e.keyCode, 'to multiple keys:', mappedKeys);
-        } else if (mappedKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            simulateKey(mappedKey, 'keydown');
-            console.log('Mapped', e.keyCode, 'to', mappedKey);
-        }
 
-        canvasElement.focus();
-    });
+            var newEvent = createKeyEvent('keydown', mapping.keyCode, mapping.key);
+            canvasElement.dispatchEvent(newEvent);
+            console.log('Event dispatched');
+        } else {
+            console.log('No mapping for', e.keyCode, '- passing through');
+        }
+    }, true);
 
     document.addEventListener('keyup', function (e) {
-        var mappedKey = null;
-        var mappedKeys = null;
-
-        switch (e.keyCode) {
-            case 37: mappedKey = 'ArrowLeft'; break;
-            case 38: mappedKey = 'ArrowUp'; break;
-            case 39: mappedKey = 'ArrowRight'; break;
-            case 40: mappedKey = 'ArrowDown'; break;
-            case 13: mappedKeys = [' ', 'Enter', 'y']; break;
-            case 10009: mappedKey = 'Escape'; break;
-            case 427: mappedKey = '1'; break;
-            case 428: mappedKey = '2'; break;
-            case 429: mappedKey = '3'; break;
-            case 430: mappedKey = '4'; break;
-            case 415: mappedKey = 'Tab'; break;
-            case 412: mappedKey = ','; break;
-            case 417: mappedKey = '.'; break;
+        if (e.keyCode >= 37 && e.keyCode <= 40) {
+            return;
         }
 
-        if (mappedKeys) {
-            e.preventDefault();
-            e.stopPropagation();
-            simulateMultipleKeys(mappedKeys, 'keyup');
-        } else if (mappedKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            simulateKey(mappedKey, 'keyup');
+        if ((e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 48 && e.keyCode <= 57)) {
+            return;
         }
-    });
+
+        var mapping = keyMappings[e.keyCode];
+
+        if (mapping) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var newEvent = createKeyEvent('keyup', mapping.keyCode, mapping.key);
+            canvasElement.dispatchEvent(newEvent);
+        }
+    }, true);
 }
 
-// Auto-init wenn verfügbar
+// Auto-init
 if (typeof window !== 'undefined') {
     initTizen();
 }
+
+console.log('input.js finished loading');
