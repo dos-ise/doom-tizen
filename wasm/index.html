@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-us">
 <head>
     <title>Websockets Doom</title>
@@ -21,7 +21,6 @@
             font-family: "VT323", monospace;
         }
 
-        /* Fullscreen canvas */
         canvas#canvas {
             position: fixed;
             top: 0;
@@ -31,7 +30,6 @@
             background: black;
         }
 
-        /* Console output hidden but still present */
         #errlog {
             display: none;
         }
@@ -40,8 +38,6 @@
 </head>
 <body>
     <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
-
-    <!-- Hidden console overlay -->
     <div id="errlog"></div>
 
     <script>
@@ -82,14 +78,15 @@
         ];
 
         var Module = {
-            onRuntimeInitialized: () => {
-                callMain(commonArgs);
+            onRuntimeInitialized: async () => {
+                await callMain(commonArgs);
             },
             noInitialRun: true,
             preRun: [
                 function () {
-                    FS.createPreloadedFile("/", "doom1.wad", "doom1.wad", true, false);
-                    FS.createPreloadedFile("/", "default.cfg", "default.cfg", true, false);
+                    // Modern Emscripten: Module.FS
+                    Module.FS.createPreloadedFile("/", "doom1.wad", "doom1.wad", true, false);
+                    Module.FS.createPreloadedFile("/", "default.cfg", "default.cfg", true, false);
                 }
             ],
             printErr: function (text) {
@@ -98,14 +95,12 @@
             },
             canvas: (function () {
                 var canvas = document.getElementById("canvas");
-
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
                 canvas.addEventListener("webglcontextlost", function (e) {
                     alert("WebGL context lost. Reload required.");
                     e.preventDefault();
                 }, false);
-
                 return canvas;
             })(),
             print: function (text) {
@@ -120,16 +115,15 @@
                 Module.setStatus(left ? "Preparing... (" + (this.totalDependencies - left) + "/" + this.totalDependencies + ")" : "All downloads complete.");
             },
             onExit: function (code) {
-                try
-                {
-                    tizen.application.getCurrentApplication().exit();                       
-                } catch (e)
-                {
+                try {
+                    tizen.application.getCurrentApplication().exit();
+                } catch (e) {
                     console.log("Tizen exit failed:", e);
                 }
             }
         };
     </script>
+
     <script src="chocolate-doom.js"></script>
     <script src="input.js"></script>
 </body>
