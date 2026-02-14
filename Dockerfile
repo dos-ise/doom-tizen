@@ -84,6 +84,7 @@ ENV LDFLAGS="$EMSCRIPTEN_FLAGS -O3 -flto"
 RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
+		-DEMSCRIPTEN=1 \
         -DWITH_SDL_MIXER=OFF \
         -DWITH_SDL_NET=OFF \
         -DCMAKE_C_FLAGS=\"$CFLAGS\" \

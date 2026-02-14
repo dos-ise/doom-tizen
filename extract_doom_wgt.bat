@@ -1,45 +1,53 @@
 @echo off
 echo ================================================
-echo Doom.wgt aus Docker Container extrahieren
+echo Building and extracting Doom.wgt from Docker
 echo ================================================
 echo.
 
-echo [1/5] Erstelle temporaeren Container...
-docker create --name doom-tmp doom-tizen
+echo [1/6] Building Docker image...
+docker build -t doom-tizen .
 if errorlevel 1 (
-    echo FEHLER: Container konnte nicht erstellt werden!
+    echo ERROR: Docker image build failed!
     pause
     exit /b 1
 )
 
-echo [2/5] Starte Container...
+echo [2/6] Creating temporary container...
+docker create --name doom-tmp doom-tizen
+if errorlevel 1 (
+    echo ERROR: Failed to create container!
+    pause
+    exit /b 1
+)
+
+echo [3/6] Starting container...
 docker start doom-tmp
 if errorlevel 1 (
-    echo FEHLER: Container konnte nicht gestartet werden!
+    echo ERROR: Failed to start container!
     docker rm doom-tmp
     pause
     exit /b 1
 )
 
-echo [3/5] Warte kurz...
+echo [4/6] Waiting...
 timeout /t 2 /nobreak >nul
 
-echo [4/5] Kopiere Doom.wgt...
+echo [5/6] Copying Doom.wgt...
 docker cp doom-tmp:/home/doom/Doom.wgt .
 if errorlevel 1 (
-    echo FEHLER: Datei konnte nicht kopiert werden!
+    echo ERROR: Failed to copy file!
     docker stop doom-tmp
     docker rm doom-tmp
     pause
     exit /b 1
 )
 
-echo [5/5] Raeume auf...
+echo [6/6] Cleaning up...
 docker stop doom-tmp
 docker rm doom-tmp
 
 echo.
 echo ================================================
-echo FERTIG! Doom.wgt wurde erfolgreich extrahiert.
+echo SUCCESS! Doom.wgt extracted successfully.
 echo ================================================
 pause
