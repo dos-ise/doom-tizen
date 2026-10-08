@@ -1,0 +1,52 @@
+# GitLab CI/CD pipeline for Doom Tizen
+#
+# Builds the Docker image (which compiles Chocolate Doom to WebAssembly
+# with Emscripten and packages it as a Tizen widget) and extracts the
+# resulting Doom.wgt as a pipeline artifact.
+#
+# Requirements:
+#   - A GitLab runner with the "docker" executor (or shell + Docker CLI)
+#   - The chocolate-doom submodule must be fetched (GIT_SUBMODULE_STRATEGY)
+#
+# The build downloads Tizen Studio and Emscripten and compiles the game,
+# so it can take 30-60 minutes on the first run.
+
+stages:
+  - build
+
+variables:
+  # Fetch the chocolate-doom submodule so it is part of the Docker build context
+  GIT_SUBMODULE_STRATEGY: recursive
+  # Standard Docker-in-Docker TLS setup
+  DOCKER_TLS_CERTDIR: "/certs"
+
+build-wgt:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  # Remove the "tags" line if your runner does not use tags, or set it to
+  # the tag of your Docker-capable runner (e.g. "docker", "dind").
+  # tags:
+  #   - docker
+  timeout: 2 hours
+  rules:
+    # Run on pushes to the default branch
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    # Allow manual triggering from the Pipelines page
+    - when: manual
+      allow_failure: false
+  script:
+    - docker info
+    - docker build -t doom-tizen .
+    - docker create --name doom-tmp doom-tizen
+    - docker start doom-tmp
+    - docker cp doom-tmp:/home/doom/Doom.wgt ./Doom.wgt
+    - docker stop doom-tmp
+    - docker rm doom-tmp
+    - ls -lh Doom.wgt
+  artifacts:
+    name: "Doom-$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - Doom.wgt
+    expire_in: 1 week

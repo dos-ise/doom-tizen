@@ -85,8 +85,8 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
 		-DEMSCRIPTEN=1 \
-        -DWITH_SDL_MIXER=OFF \
-        -DWITH_SDL_NET=OFF \
+        -DENABLE_SDL2_MIXER=OFF \
+        -DENABLE_SDL2_NET=OFF \
         -DCMAKE_C_FLAGS=\"$CFLAGS\" \
         -DCMAKE_CXX_FLAGS=\"$CXXFLAGS\" \
         -DCMAKE_EXE_LINKER_FLAGS=\"$LDFLAGS\" \
