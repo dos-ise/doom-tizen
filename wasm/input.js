@@ -26,7 +26,12 @@ var ACTION_KEYS = {
     UP:           { code: 'ArrowUp',    key: 'ArrowUp',    keyCode: 38 },
     DOWN:         { code: 'ArrowDown',  key: 'ArrowDown',  keyCode: 40 },
     LEFT:         { code: 'ArrowLeft',  key: 'ArrowLeft',  keyCode: 37 },
-    RIGHT:        { code: 'ArrowRight', key: 'ArrowRight', keyCode: 39 }
+    RIGHT:        { code: 'ArrowRight', key: 'ArrowRight', keyCode: 39 },
+    PAUSE:        { code: 'KeyP',       key: 'p',      keyCode: 80 },
+    NEXT_WEAPON:  { code: 'BracketRight', key: ']',    keyCode: 221 },
+    PREV_WEAPON:  { code: 'BracketLeft',  key: '[',    keyCode: 219 },
+    QUICK_SAVE:   { code: 'F6',         key: 'F6',     keyCode: 117 },
+    QUICK_LOAD:   { code: 'F9',         key: 'F9',     keyCode: 120 }
 };
 
 // Native (real hardware keyboard) keys we never intercept — let them fall
@@ -95,9 +100,15 @@ var REMOTE_KEY_ACTIONS = {
     'ColorF1Green':     'WEAPON2',
     'ColorF2Yellow':    'WEAPON3',
     'ColorF3Blue':      'WEAPON4',
+    'ColorF4':          'QUICK_SAVE',
+    'ColorF5':          'QUICK_LOAD',
     'ChannelUp':        'FIRE',
     'ChannelDown':      'USE',
     'MediaPlay':        'MAP',
+    'MediaPlayPause':   'PAUSE',
+    'MediaStop':        'NEXT_WEAPON',
+    'MediaTrackNext':   'NEXT_WEAPON',
+    'MediaTrackPrevious': 'PREV_WEAPON',
     'MediaRewind':      'STRAFE_LEFT',
     'MediaFastForward': 'STRAFE_RIGHT'
 };
@@ -199,6 +210,9 @@ var GAMEPAD_BUTTON_MAP = {
     3: 'ESC',          // Y
     4: 'STRAFE_LEFT',  // Left bumper
     5: 'STRAFE_RIGHT', // Right bumper
+    6: 'PREV_WEAPON',  // Left trigger
+    7: 'NEXT_WEAPON',  // Right trigger
+    8: 'QUICK_SAVE',   // Select/Back
     9: 'ENTER',        // Start
     12: 'UP',          // D-Pad up
     13: 'DOWN',        // D-Pad down
