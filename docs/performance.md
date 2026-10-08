@@ -1,6 +1,6 @@
 # Performance Optimization
 
-**Status:** Applied (PR #3)
+**Status:** Applied (PR #3 + PR #12)
 **Date:** 2026-10-08
 
 ---
@@ -16,7 +16,21 @@ single-threaded software renderer like Chocolate Doom's.
 
 ## Solution
 
-### 1. Fixed internal resolution (960×540)
+### 1. Game Mode (biggest win, from moonlight-tizen)
+
+Samsung TVs have a **Game Mode** that disables all post-processing (motion
+smoothing, noise reduction, sharpening) and reduces input latency. It is
+activated per-app via metadata in `config.xml`:
+
+```xml
+<tizen:metadata key="http://samsung.com/tv/metadata/use.game.mode" value="true"/>
+```
+
+This is the single biggest performance lever for Samsung TVs. The idea comes
+from [moonlight-tizen](https://github.com/brightcraft/moonlight-tizen), which
+injects the same metadata (via a `FORCE_GAME_MODE` build arg).
+
+### 2. Fixed internal resolution (960×540)
 
 The game now renders internally at a fixed low resolution and the TV browser
 upscales it to full screen.
@@ -34,7 +48,7 @@ const GAME_HEIGHT = 540;
 960×540 is a good default: it is exactly 1/4 of 1080p, so the upscale is a
 clean 2× integer scale on Full-HD TVs and still looks sharp on 4K.
 
-### 2. Disable smooth pixel scaling
+### 3. Disable smooth pixel scaling
 
 `wasm/chocolate-doom.cfg`:
 
@@ -45,13 +59,25 @@ smooth_pixel_scaling 0
 This disables Chocolate Doom's bilinear smoothing of the internal framebuffer,
 which saves a full-screen texture pass per frame.
 
-### 3. CSS rendering hints
+### 4. Audio settings
+
+`wasm/chocolate-doom.cfg`:
+
+```
+snd_samplerate 22050
+snd_cachesize 16777216
+```
+
+Lower sample rate (22 kHz instead of 44.1 kHz) halves the audio mixing CPU
+load. 16 MB sound cache is plenty for Doom's sound effects.
+
+### 5. CSS rendering hints
 
 `wasm/index.html` uses `image-rendering: pixelated` plus GPU compositing hints
 (`will-change: contents`, `transform: translateZ(0)`, `backface-visibility:
 hidden`) so the upscale is done by the TV's GPU, not the CPU.
 
-### 4. Emscripten memory flags
+### 6. Emscripten memory flags
 
 `Dockerfile`:
 
@@ -64,6 +90,24 @@ hidden`) so the upscale is done by the TV's GPU, not the CPU.
 `ALLOW_MEMORY_GROWTH=0` avoids the expensive memory-growth reallocations that
 can cause frame hitches. 256 MB is plenty for Chocolate Doom (the shareware WAD
 is ~4 MB).
+
+---
+
+## Important: which config file holds which settings
+
+Chocolate Doom splits its config into two files (see `m_config.c`):
+
+| File | Collection | Loaded via | Contains |
+|------|-----------|------------|----------|
+| `default.cfg` | `doom_defaults_list` (line 121) | `-config` | Movement/weapon key bindings, mouse, joystick, volume |
+| `chocolate-doom.cfg` | `extra_defaults_list` (line 701) | `-extraconfig` | Video (smooth_pixel_scaling, aspect_ratio), audio (snd_samplerate, snd_cachesize), menu/map keys, gamepad |
+
+**The performance settings (`smooth_pixel_scaling`, `snd_samplerate`,
+`snd_cachesize`) belong to the EXTRA config and are only active when
+`-extraconfig chocolate-doom.cfg` is passed.** After the PR #4 revert removed
+`-extraconfig`, these settings were silently inactive. They were re-enabled in
+PR #12 (the config contains only the original key bindings that are known to
+work).
 
 ---
 
@@ -96,6 +140,26 @@ modern JS syntax. The build therefore uses:
 
 These flags are about compatibility, not speed, but they are part of the build
 configuration that determines what runs on which TV generation.
+
+---
+
+## Evaluation: Samsung Emscripten SDK (not adopted)
+
+[moonlight-tizen](https://github.com/brightcraft/moonlight-tizen) uses
+Samsung's customized Emscripten SDK (fastcomp 1.39.4.7) with the
+`ENVIRONMENT_MAY_BE_TIZEN` flag instead of modern upstream Emscripten.
+
+**Why we did NOT switch:** the fastcomp backend is from 2020 and generates
+slower code than the modern upstream LLVM backend for CPU-bound code. Doom's
+software renderer is exactly such a workload, so switching would likely make
+performance *worse*. The Samsung SDK's advantage is Tizen compatibility, not
+speed. We keep modern upstream Emscripten with `-O3 -flto`.
+
+Other moonlight-tizen techniques that do not apply to Doom:
+- `-Os` (size optimization) – we use `-O3` (speed), correct for a game
+- pthreads / Web Workers – used for the streaming pipeline; Doom's renderer is
+  single-threaded
+- ccache – build-time only
 
 ---
 
