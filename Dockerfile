@@ -75,11 +75,17 @@ ENV EMSCRIPTEN_FLAGS="\
 -s FORCE_FILESYSTEM=1 \
 -s EXIT_RUNTIME=0 \
 -s ASSERTIONS=0 \
--s DISABLE_EXCEPTION_CATCHING=1"
+-s DISABLE_EXCEPTION_CATCHING=1 \
+-s WASM_BIGINT=0"
 
-ENV CFLAGS="-O3 -flto -DHAVE_DECL_STRCASECMP=1 -DHAVE_DECL_STRNCASECMP=1"
-ENV CXXFLAGS="-O3 -flto"
-ENV LDFLAGS="$EMSCRIPTEN_FLAGS -O3 -flto"
+# Tizen 5.5 (2020 sets) runs Chromium 69: no bulk memory, non-trapping float-to-int or BigInt
+# at the JS/WASM boundary (WASM_BIGINT=0 above). Sign-extension ops do work there, but they are
+# lowered as well so the module stays within the MVP feature set. Current Emscripten refuses
+# MIN_CHROME_VERSION below 85, so the features are switched off directly instead.
+ENV WASM_COMPAT="-mno-bulk-memory -mno-bulk-memory-opt -mno-sign-ext -mno-nontrapping-fptoint"
+ENV CFLAGS="-O3 -flto $WASM_COMPAT -DHAVE_DECL_STRCASECMP=1 -DHAVE_DECL_STRNCASECMP=1"
+ENV CXXFLAGS="-O3 -flto $WASM_COMPAT"
+ENV LDFLAGS="$EMSCRIPTEN_FLAGS $WASM_COMPAT -O3 -flto"
 
 RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emcmake cmake \
@@ -96,6 +102,25 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
 
 RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emmake ninja -C build"
+
+# The generated JS uses syntax newer than Chromium 69 (optional chaining, ??=, private fields).
+# Lower it with esbuild, using the node that ships with emsdk.
+RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
+    mkdir -p /home/doom/lower && cd /home/doom/lower && \
+    npm init -y >/dev/null && npm install --no-audit --no-fund esbuild@0.24.0 >/dev/null && \
+    npx esbuild /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js \
+        --target=chrome69 --allow-overwrite --log-level=warning \
+        --outfile=/home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js"
+
+# Emscripten's prebuilt libc (memcpy/memset) still uses bulk memory, so lower the linked
+# module to the MVP instruction set Chromium 69 accepts, and fail the build if anything is left.
+RUN /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm \
+        --enable-bulk-memory --enable-bulk-memory-opt --enable-sign-ext \
+        --enable-nontrapping-float-to-int --enable-mutable-globals \
+        --llvm-memory-copy-fill-lowering --signext-lowering --llvm-nontrapping-fptoint-lowering \
+        -o /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered && \
+    /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered --mvp-features -o /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm && \
+    rm /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered
 
 # Copy compiled files
 RUN cp /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js /home/doom/doom-tizen/wasm/
