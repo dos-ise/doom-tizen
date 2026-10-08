@@ -64,20 +64,28 @@ which saves a full-screen texture pass per frame.
 `wasm/chocolate-doom.cfg`:
 
 ```
-snd_samplerate 22050
-snd_cachesize 16777216
+snd_samplerate 44100
+snd_cachesize 33554432
+snd_pitchshift 1
 ```
 
-Lower sample rate (22 kHz instead of 44.1 kHz) halves the audio mixing CPU
-load. 16 MB sound cache is plenty for Doom's sound effects.
+- 44.1 kHz sample rate for good sound effect quality
+- 32 MB sound cache to avoid cut-off sounds
+- Pitch shifting enabled for more dynamic sound effects
 
-### 5. CSS rendering hints
+### 5. Music (OPL FM synthesis)
+
+Music is enabled via the OPL3 emulator (`snd_musicdevice 3` = Sound Blaster),
+the authentic DOS Doom sound. The `chocolate-doom` submodule update
+significantly improved the OPL3 emulator (`opl3.c`). No `-nomusic` flag.
+
+### 6. CSS rendering hints
 
 `wasm/index.html` uses `image-rendering: pixelated` plus GPU compositing hints
 (`will-change: contents`, `transform: translateZ(0)`, `backface-visibility:
 hidden`) so the upscale is done by the TV's GPU, not the CPU.
 
-### 6. Emscripten memory flags
+### 7. Emscripten memory flags
 
 `Dockerfile`:
 
@@ -165,6 +173,12 @@ Other moonlight-tizen techniques that do not apply to Doom:
 
 ## Notes
 
+- **SDL2_mixer must be enabled** (`ENABLE_SDL2_MIXER=ON` + `-s USE_SDL2_MIXER=2`):
+  Chocolate Doom ties the SDL sound module (`sound_sdl_module` in `i_sound.c`)
+  to the `DISABLE_SDL2MIXER` define. Disabling SDL2_mixer therefore disables
+  ALL sound (only PC speaker emulation remains). This broke sound in PR #5
+  when the Dockerfile flag was renamed from the ignored `WITH_SDL_MIXER=OFF`
+  to the effective `ENABLE_SDL2_MIXER=OFF`.
 - The audio settings (`snd_samplerate`, `snd_cachesize`) and `startup_delay`
   were part of PR #4 and are currently reverted to their defaults (see
   [remote-control-debugging.md](remote-control-debugging.md)).
