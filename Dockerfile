@@ -62,7 +62,6 @@ WORKDIR /home/doom/doom-tizen/chocolate-doom
 # Optimierte Flags f�r Tizen (OHNE preload-file)
 ENV EMSCRIPTEN_FLAGS="\
 -s WASM=1 \
--s WASM_BIGINT=1 \
 -s ALLOW_MEMORY_GROWTH=0 \
 -s INITIAL_MEMORY=268435456 \
 -s STACK_SIZE=5242880 \
