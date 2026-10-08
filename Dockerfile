@@ -59,12 +59,12 @@ RUN git submodule update --init --recursive
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 
-# Optimierte Flags für Tizen (OHNE preload-file)
+# Optimierte Flags fï¿½r Tizen (OHNE preload-file)
 ENV EMSCRIPTEN_FLAGS="\
 -s WASM=1 \
--s ALLOW_MEMORY_GROWTH=1 \
--s INITIAL_MEMORY=67108864 \
--s MAXIMUM_MEMORY=268435456 \
+-s WASM_BIGINT=1 \
+-s ALLOW_MEMORY_GROWTH=0 \
+-s INITIAL_MEMORY=268435456 \
 -s STACK_SIZE=5242880 \
 -s EXPORTED_FUNCTIONS=['_main'] \
 -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','FS','FS_createPreloadedFile'] \

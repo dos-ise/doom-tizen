@@ -99,6 +99,18 @@ To play the full version:
 
 ---
 
+## Performance
+
+Doom renders internally at a low resolution (960×540 by default) and is upscaled
+to full screen by the TV browser. This keeps the software renderer fast on
+Tizen TV hardware.
+
+If the game still feels slow on your TV, lower the internal resolution in
+`wasm/index.html` (constants `GAME_WIDTH` / `GAME_HEIGHT`, e.g. `640` × `400`).
+Higher values (e.g. `1280` × `720`) look sharper but cost more performance.
+
+---
+
 ## Controls
 ### Samsung TV Remote
 | Button | Action |
