@@ -21,6 +21,7 @@
 
     <tizen:metadata key="http://samsung.com/tv/metadata/use.voiceguide" value="false"/>
     <tizen:metadata key="http://samsung.com/tv/metadata/floating.navigation" value="false"/>
+    <tizen:metadata key="http://samsung.com/tv/metadata/use.game.mode" value="true"/>
 
     <name>Doom</name>
 
