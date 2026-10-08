@@ -158,6 +158,12 @@ doom-tizen/
 
 ---
 
+## Documentation
+
+- [TV Remote Control Regression – Debugging Report](docs/remote-control-debugging.md)
+
+---
+
 ## Credits
 
 - **Doom** © id Software
