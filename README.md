@@ -125,6 +125,11 @@ Higher values (e.g. `1280` × `720`) look sharper but cost more performance.
 | **Yellow** | Weapon 3 |
 | **Blue** | Weapon 4 |
 | **Play** | Show map |
+| **Play/Pause** | Pause game |
+| **Stop / Next Track** | Next weapon |
+| **Previous Track** | Previous weapon |
+| **Color F4** | Quick save |
+| **Color F5** | Quick load |
 | **Rewind** | Strafe left |
 | **Fast Forward** | Strafe right |
 
@@ -140,6 +145,9 @@ Higher values (e.g. `1280` × `720`) look sharper but cost more performance.
 | **Start** | Confirm in menus |
 | **LB** | Strafe left |
 | **RB** | Strafe right |
+| **LT** | Previous weapon |
+| **RT** | Next weapon |
+| **Select** | Quick save |
 ---
 
 ## Project Structure
