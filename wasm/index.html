@@ -60,6 +60,12 @@
         const statusElement = document.getElementById('status');
         const canvasElement = document.getElementById('canvas');
 
+        // Internal render resolution. The software renderer is the bottleneck,
+        // so we render at a low resolution and let CSS upscale to full screen.
+        // Lower to 640x400 on very weak TVs if 960x540 is still too slow.
+        const GAME_WIDTH = 960;
+        const GAME_HEIGHT = 540;
+
         var Module = {
             arguments: [
                 "-iwad", "doom1.wad",
@@ -67,8 +73,8 @@
                 "-nogui",
                 "-nomusic",
                 "-config", "default.cfg",
-                "-width", window.innerWidth.toString(),
-                "-height", window.innerHeight.toString()
+                "-width", GAME_WIDTH.toString(),
+                "-height", GAME_HEIGHT.toString()
             ],
 
             preRun: [
