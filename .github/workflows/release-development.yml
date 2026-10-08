@@ -1,8 +1,13 @@
-# This workflow builds a Docker image from the repository, pushes it to GitHub Container Registry, and then triggers a second job to extract an artifact and create a GitHub pre-release.
+# This workflow builds a Docker image from the repository, pushes it to GitHub Container Registry, and then triggers a second job to extract an artifact and create a GitHub release.
 name: Release (Development)
 # Configure this workflow to be triggered manually from the GitHub Actions tab for development-related branches.
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0). Leave empty for a timestamped pre-release.'
+        required: false
+        default: ''
 # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
 env:
   REGISTRY: ghcr.io
@@ -81,7 +86,9 @@ jobs:
       - name: Set up image tag
         run: echo "IMAGE_TAG=${{ needs.build-and-push-image.outputs.image_tag }}" >> $GITHUB_ENV
       # Deletes any existing GitHub pre-releases from the same branch to avoid duplicates.
+      # Only runs for the timestamped pre-release flow, not for versioned releases.
       - name: Check and delete any existing GitHub pre-releases from the same branch
+        if: ${{ github.event.inputs.version == '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -124,35 +131,44 @@ jobs:
       - name: Stop and remove Docker container
         run: |
           docker stop temp_container && docker rm temp_container
-      # Creates a new GitHub pre-release using the extracted version and includes a detailed description.
-      - name: Create GitHub pre-release
-        id: create_prerelease
-        uses: actions/create-release@v1
+      # Creates a GitHub release. If a version was provided via workflow_dispatch,
+      # it creates a proper release (e.g. v1.0); otherwise a timestamped pre-release.
+      - name: Create GitHub release
+        id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ env.TIMESTAMP }}-${{ env.BRANCH }}
-          release_name: "v${{ env.TIMESTAMP }}-${{ env.BRANCH }}"
-          body: |
-            # Doom Tizen v${{ env.TIMESTAMP }}
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            RELEASE_TAG="v${{ github.event.inputs.version }}"
+            RELEASE_NAME="v${{ github.event.inputs.version }}"
+            PRERELEASE=""
+            NOTES="# Doom Tizen v${{ github.event.inputs.version }}
 
-            - Ensure your Samsung TV is running Tizen OS version 5.5 or higher.
+          - Ensure your Samsung TV is running Tizen OS version 5.5 or higher.
 
-            ## What's Changed:
+          ## What's Changed:
 
-            - Add all the changes you made to this version using bullet points.
+          - Performance: low internal render resolution, fixed key bindings, new TV controls
+          - Tizen 5.5 (Chromium 69) compatibility
+          - Updated chocolate-doom submodule"
+          else
+            RELEASE_TAG="v${{ env.TIMESTAMP }}-${{ env.BRANCH }}"
+            RELEASE_NAME="v${{ env.TIMESTAMP }}-${{ env.BRANCH }}"
+            PRERELEASE="--prerelease"
+            NOTES="# Doom Tizen v${{ env.TIMESTAMP }}
 
-            > [!WARNING]
-            > This is a **pre-release** version intended for development and testing purposes.
-            > It may include experimental features and bug fixes, but could be less stable than official releases.
-          draft: false
-          prerelease: true
-      - name: Upload the widget file to GitHub pre-release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_prerelease.outputs.upload_url }}
-          asset_path: ./Doom.wgt
-          asset_name: Doom.wgt
-          asset_content_type: application/octet-stream
+          - Ensure your Samsung TV is running Tizen OS version 5.5 or higher.
+
+          ## What's Changed:
+
+          - Add all the changes you made to this version using bullet points.
+
+          > [!WARNING]
+          > This is a **pre-release** version intended for development and testing purposes.
+          > It may include experimental features and bug fixes, but could be less stable than official releases."
+          fi
+          gh release create "$RELEASE_TAG" ./Doom.wgt \
+            --title "$RELEASE_NAME" \
+            --notes "$NOTES" \
+            $PRERELEASE \
+            --repo "${{ github.repository }}"
