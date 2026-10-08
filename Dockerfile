@@ -104,12 +104,17 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
 
 # The generated JS uses syntax newer than Chromium 69 (optional chaining, ??=, private fields).
 # Lower it with esbuild, using the node that ships with emsdk.
-RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
+# Only needed for Tizen 5.5 (Chromium 69). Disabled by default because it can break
+# input handling on newer engines; enable with --build-arg TIZEN55_COMPAT=1.
+ARG TIZEN55_COMPAT=0
+RUN if [ "$TIZEN55_COMPAT" = "1" ]; then \
+    bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     mkdir -p /home/doom/lower && cd /home/doom/lower && \
     npm init -y >/dev/null && npm install --no-audit --no-fund esbuild@0.24.0 >/dev/null && \
     npx esbuild /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js \
         --target=chrome69 --allow-overwrite --log-level=warning \
-        --outfile=/home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js"
+        --outfile=/home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js"; \
+  fi
 
 # Emscripten's prebuilt libc (memcpy/memset) still uses bulk memory, so lower the linked
 # module to the MVP instruction set Chromium 69 accepts, and fail the build if anything is left.
