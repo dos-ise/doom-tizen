@@ -1,0 +1,14 @@
+diff --git a/src/i_sound.c b/src/i_sound.c
+index 7a7bdb31..5d7295a1 100644
+--- a/src/i_sound.c
++++ b/src/i_sound.c
+@@ -85,9 +85,7 @@ static int snd_mport = 0;
+ 
+ static const sound_module_t *sound_modules[] =
+ {
+-#ifndef DISABLE_SDL2MIXER
+     &sound_sdl_module,
+-#endif // DISABLE_SDL2MIXER
+     &sound_pcsound_module,
+     NULL,
+ };
