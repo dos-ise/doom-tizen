@@ -75,7 +75,8 @@ ENV EMSCRIPTEN_FLAGS="\
 -s EXIT_RUNTIME=0 \
 -s ASSERTIONS=0 \
 -s DISABLE_EXCEPTION_CATCHING=1 \
--s WASM_BIGINT=0"
+-s WASM_BIGINT=0 \
+-s USE_SDL2_MIXER=2"
 
 # Tizen 5.5 (2020 sets) runs Chromium 69: no bulk memory, non-trapping float-to-int or BigInt
 # at the JS/WASM boundary (WASM_BIGINT=0 above). Sign-extension ops do work there, but they are
@@ -90,7 +91,7 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
 		-DEMSCRIPTEN=1 \
-        -DENABLE_SDL2_MIXER=OFF \
+        -DENABLE_SDL2_MIXER=ON \
         -DENABLE_SDL2_NET=OFF \
         -DCMAKE_C_FLAGS=\"$CFLAGS\" \
         -DCMAKE_CXX_FLAGS=\"$CXXFLAGS\" \
