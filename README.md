@@ -160,6 +160,8 @@ doom-tizen/
 
 ## Documentation
 
+- [Performance Optimization](docs/performance.md)
+- [Building the WGT File](docs/building-wgt.md)
 - [TV Remote Control Regression – Debugging Report](docs/remote-control-debugging.md)
 
 ---
