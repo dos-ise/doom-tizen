@@ -85,7 +85,52 @@
  (data $83 (i32.const 131016) "\ff\'b\f5\ff(b\f8\ff(`\f7\ff(^\f7\ff(\\\f7\ff([\f7\ff(Y\f6\ff(W\f6\ff(U\f6\ff(T\f5\ff(R\f5\ff(P\f5\ff(O\f5\ff\'M\f4\ff\'K\f4\ff\'I\f4\ff\'H\f3\ff\'F\f3\ff\'D\f3\ff\'B\f3\ff\'A\f2\ff\e2\cdf\ff\eb\d4^\ff\ea\d2]\ff\e9\d0\\\ff\e8\cf[\ff\e8\cd[\ff\e7\ccZ\ff\e6\caY\ff\e5\c8X\ff\bd\a0t\ffB$\d0\ffB#\d0\ffB!\d0\ffB \cf\ffB\1f\cf\ffB\1e\cf\ff\b9\95o\ff\de\baQ\ff\dd\b8P\ff\dc\b6O\ff\db\b5O\ff\da\b3N\ff\d9\b1M\ff\d9\b0L\ff\8a\99\9b\ffC\d8\fc\ffD\1d\c7\ffC\1d\c6\ffC\1d\c5\ffC\1c\c5\ffB\1d\c4\ffB\1d\c3\ffB\1d\c3\ffB\1c\c2\ff>\1d\c9\ff5!\d7\ff4 \d7\ff5 \d6\ff6 \d5\ff6 \d4\ff7\1f\d3\ff8\1f\d2\ff8\1f\d1\ff9\1f\d0\ff:\1e\cf\ff:\1e\ce\ff:\1e\cb")
 ```
 
-### 2. WASM exports
+### 2. ELEMENT section (.init_array function list)
+
+```
+ (elem $0 (i32.const 1) $1028 $1074 $1027 $1026 $1164 $1163 $1162 $1030 $700 $675 $1290 $1276 $631 $631 $890 $1117 $1118 $820 $819 $818 $817 $816 $815 $814 $813 $812 $811 $810 $809 $78 $808 $448 $78 $78 $78 $78 $206 $807 $78 $78 $78 $78 $78 $211 $806 $843 $842 $882 $1101 $1099 $1098 $873 $805 $804 $803 $802 $801 $800 $799 $798 $797 $796 $795 $1072 $527 $1016 $1012 $1015 $912 $913 $910 $911 $908 $909 $906 $907 $537 $1075 $1291 $993 $1014 $991 $905 $1020 $1019 $1023 $1018 $1017 $1025 $1022 $1024 $1021 $936 $935 $1013 $914 $983 $982 $884 $880 $872 $871 $870 $869 $868 $867 $866 $865 $733 $732 $731 $1233 $1232 $1231 $1230 $1229 $840 $839 $838 $837 $836 $835 $834 $342 $824 $823 $822 $821 $716 $715 $714 $713 $712 $718 $717 $707 $706 $705 $729 $78 $728 $727 $726 $725 $724 $723 $721 $720 $711 $710 $709 $708 $699 $698 $697 $696 $695 $694 $693 $692 $691 $690 $689 $688 $687 $686 $685 $684 $683 $682 $681 $680 $679 $678 $677 $676 $674 $673 $672 $671 $329 $669 $668 $667 $412 $670 $658 $657 $1407 $1406 $666 $665 $664 $663 $1288 $1287 $1286 $1285 $1284 $1283 $634 $1282 $1281 $1280 $1279 $1278 $1277 $1275 $1274 $1273 $1272 $1271 $1270 $1269 $1268 $1267 $179 $632 $630 $629 $628 $627 $626 $1254 $1253 $1252 $1251 $1250 $1249 $1248 $1247 $1246 $1245 $1244 $1243 $1242 $1241 $1240 $1239 $1217 $1216 $610 $1261 $304 $373 $1262 $1263 $1264 $1265 $1266 $1235 $1236 $1237 $1238 $1255 $1256 $1257 $1258 $1259 $1260 $179 $1161 $615 $1227 $188 $78 $1214 $1213 $1212 $78 $1211 $1210 $1209 $1208 $1207 $1206 $181 $1205 $1204 $1203 $1202 $1201 $1200 $1199 $1198 $1197 $1196 $1195 $1194 $1193 $1192 $1191 $1190 $1189 $1188 $1187 $1186 $1185 $1184 $1183 $1182 $1181 $1180 $1179 $1178 $1177 $1176 $1175 $1174 $fimport$184 $fimport$195 $fimport$206 $fimport$217 $fimport$39 $1172 $fimport$89 $fimport$90 $fimport$100 $fimport$110 $fimport$117 $fimport$128 $fimport$139 $fimport$151 $fimport$162 $fimport$173 $fimport$87 $fimport$88 $1173 $fimport$60 $fimport$59 $fimport$58 $fimport$57 $fimport$56 $fimport$55 $fimport$54 $fimport$53 $fimport$52 $fimport$51 $fimport$50 $fimport$49 $fimport$48 $fimport$47 $fimport$46 $fimport$45 $fimport$44 $fimport$43 $fimport$42 $fimport$41 $fimport$40 $fimport$247 $fimport$246 $fimport$245 $fimport$244 $fimport$243 $fimport$242 $fimport$241 $fimport$240 $fimport$239 $fimport$238 $fimport$237 $fimport$236 $fimport$235 $fimport$234 $fimport$233 $fimport$232 $fimport$231 $fimport$230 $fimport$229 $fimport$228 $fimport$227 $fimport$226 $fimport$225 $fimport$224 $fimport$223 $fimport$222 $fimport$221 $fimport$220 $fimport$219 $fimport$218 $fimport$216 $fimport$215 $fimport$214 $fimport$213 $fimport$212 $fimport$211 $fimport$210 $fimport$209 $fimport$208 $fimport$207 $fimport$205 $fimport$204 $fimport$203 $fimport$202 $fimport$201 $fimport$200 $fimport$199 $fimport$198 $fimport$197 $fimport$196 $fimport$194 $fimport$193 $fimport$192 $fimport$191 $fimport$190 $fimport$189 $fimport$188 $fimport$187 $fimport$186 $fimport$185 $fimport$183 $fimport$182 $fimport$181 $fimport$180 $fimport$179 $fimport$178 $fimport$177 $fimport$176 $fimport$175 $fimport$174 $fimport$172 $fimport$171 $fimport$170 $fimport$169 $fimport$168 $fimport$167 $fimport$166 $fimport$165 $fimport$164 $fimport$163 $fimport$161 $fimport$160 $fimport$159 $fimport$158 $fimport$157 $fimport$156 $fimport$155 $fimport$154 $fimport$153 $fimport$152 $fimport$150 $fimport$149 $fimport$148 $fimport$147 $fimport$146 $fimport$145 $fimport$144 $fimport$143 $fimport$142 $fimport$141 $fimport$138 $fimport$137 $fimport$136 $fimport$135 $fimport$134 $fimport$133 $fimport$132 $fimport$131 $fimport$130 $fimport$129 $fimport$127 $fimport$126 $fimport$125 $fimport$124 $fimport$123 $fimport$122 $fimport$121 $fimport$120 $fimport$119 $fimport$118 $fimport$116 $fimport$79 $fimport$78 $fimport$77 $fimport$76 $fimport$75 $fimport$74 $fimport$73 $fimport$72 $fimport$71 $fimport$70 $fimport$69 $fimport$68 $fimport$67 $fimport$66 $fimport$65 $fimport$64 $fimport$63 $fimport$62 $fimport$61 $fimport$115 $fimport$114 $fimport$113 $1171 $1170 $1169 $1168 $571 $1116 $1115 $1114 $1113 $567 $1112 $1111 $1110 $1109 $211 $548 $1083 $1082 $1081 $1080 $1079 $1078 $1077 $1076 $552 $1097 $1096 $211 $304 $1095 $1094 $1093 $551 $1092 $1091 $1090 $1089 $1088 $1087 $1086 $1085 $1084 $562 $1108 $1107 $1106 $1105 $1104 $1103 $1102 $561 $1100 $1071 $1070 $1069 $1068 $1066 $78 $1065 $1064 $1063 $1062 $1061 $1060 $78 $1059 $522 $522 $373 $179 $304 $78 $206 $1056 $1055 $1057 $1054 $304 $1053 $1052 $1051 $179 $1050 $1049 $1048 $1047 $1046 $1045 $179 $1044 $1043 $1042 $1041 $1040 $1039 $1038 $1037 $1036 $1035 $1034 $1033 $1032 $1031 $1001 $1000 $510 $511 $999 $506 $1002 $997 $998 $995 $996 $508 $507 $509 $1011 $1005 $1004 $1006 $994 $992 $1008 $1007 $1009 $1010 $1003 $989 $990 $919 $934 $931 $930 $928 $933 $923 $918 $922 $917 $921 $932 $947 $946 $945 $920 $929 $926 $927 $924 $915 $925 $916 $952 $953 $937 $987 $954 $986 $236 $985 $984 $955 $981 $967 $966 $963 $962 $965 $284 $964 $970 $969 $968 $971 $961 $960 $959 $958 $951 $980 $979 $976 $975 $974 $972 $479 $949 $978 $948 $977 $950 $973 $957 $956 $988 $943 $942 $940 $944 $939 $938 $476 $941 $206 $904 $903 $902 $901 $78 $179 $78 $900 $899 $898 $897 $896 $895 $894 $893 $892 $891 $462 $1432 $889 $888 $887 $462 $886 $885 $883 $881 $460 $879 $878 $877 $876 $211 $211 $875 $874 $846 $845 $844 $849 $848 $847 $852 $851 $850 $855 $854 $853 $858 $857 $856 $861 $860 $859 $864 $863 $862 $841 $833 $832 $831 $830 $829 $828 $827 $826 $825 $344 $789 $788 $787 $786 $785 $784 $783 $782 $781 $780 $779 $778 $777 $776 $775 $774 $773 $772 $771 $770 $769 $768 $767 $766 $765 $764 $763 $762 $761 $760 $759 $758 $757 $756 $755 $754 $753 $752 $751 $750 $749 $748 $747 $746 $745 $744 $743 $742 $741 $740 $739 $738 $737 $736 $735 $734 $794 $793 $792 $791 $790 $730 $722 $719 $704 $703 $702 $701 $662 $661 $660 $659 $1411 $1410 $1409 $1408 $1415 $1414 $1413 $1412 $1419 $1418 $1417 $1416 $1423 $1422 $1421 $1420 $1427 $1426 $1425 $1424 $1431 $1430 $1429 $1428 $1401 $1400 $1399 $1398 $1405 $1404 $1403 $1402 $1393 $1392 $1391 $1390 $1389 $1397 $1396 $1395 $1394 $1388 $1387 $654 $653 $1386 $1385 $326 $1384 $1383 $651 $650 $1382 $1381 $1380 $1379 $1378 $1377 $1376 $1375 $1374 $326 $1373 $1372 $649 $648 $1371 $1370 $329 $1369 $1368 $647 $646 $1367 $1366 $1365 $1364 $1363 $1362 $1361 $1360 $1359 $645 $1358 $1357 $654 $653 $1356 $1355 $326 $1354 $1353 $651 $650 $1352 $1351 $329 $1350 $1349 $1348 $1347 $1346 $1345 $643 $1344 $1343 $1342 $1341 $1340 $1339 $642 $1338 $1337 $1336 $1335 $1334 $1333 $1332 $1331 $1330 $1329 $1328 $1327 $1326 $326 $1325 $1324 $649 $648 $1323 $1322 $645 $1321 $1320 $647 $646 $1319 $1318 $1317 $1316 $1315 $1314 $1313 $1312 $1311 $642 $1310 $1309 $1308 $1307 $1306 $1305 $643 $1304 $1303 $1302 $1301 $1300 $1299 $1298 $1297 $1296 $1295 $1294 $1293 $1292 $1289 $1234 $1228 $1226 $211 $1225 $206 $614 $614 $373 $1224 $1223 $1222 $403 $403 $206 $1221 $403 $448 $1220 $1219 $1218 $179 $1215 $1166 $1167 $206 $1165)
+ (export "Hd" (memory $0))
+ (export "Id" (func $1433))
+ (export "Jd" (func $1029))
+ (export "Kd" (func $18))
+ (export "Ld" (func $8))
+ (export "Md" (func $580))
+ (export "Nd" (func $1073))
+ (export "Od" (func $1067))
+ (export "Pd" (func $1058))
+ (export "Qd" (func $1160))
+ (export "Rd" (func $1159))
+ (export "Sd" (func $1158))
+ (export "Td" (func $1157))
+ (export "Ud" (func $1156))
+ (export "Vd" (func $1155))
+ (export "Wd" (func $1154))
+ (export "Xd" (func $1153))
+ (export "Yd" (func $1152))
+ (export "Zd" (func $1151))
+ (export "_d" (func $1150))
+ (export "$d" (func $1149))
+ (export "ae" (func $1125))
+ (export "be" (func $1124))
+ (export "ce" (func $1148))
+ (export "de" (func $1147))
+ (export "ee" (func $1146))
+ (export "fe" (func $1145))
+ (export "ge" (func $1144))
+ (export "he" (func $1143))
+ (export "ie" (func $1142))
+ (export "je" (func $1141))
+ (export "ke" (func $1140))
+ (export "le" (func $1139))
+ (export "me" (func $1138))
+ (export "ne" (func $1137))
+ (export "oe" (func $1136))
+ (export "pe" (func $1135))
+ (export "qe" (func $1134))
+ (export "re" (func $1133))
+```
+
+### 3. WASM exports
 
 ```
  (export "Hd" (memory $0))
@@ -150,13 +195,13 @@
   (block $block
 ```
 
-### 3. Reloc/ctor functions
+### 4. Reloc/ctor functions
 
 ```
 (no reloc/ctor functions found by name)
 ```
 
-### 4. ASYNCIFY markers in JS
+### 5. ASYNCIFY markers in JS
 
 ```
 asyncify
@@ -166,22 +211,22 @@ asyncify_stop_rewind
 asyncify_stop_unwind
 ```
 
-### 5. initRuntime() in JS
+### 6. initRuntime() in JS
 
 ```
 function initRuntime(){runtimeInitialized=true;if(!Module["noFSInit"]&&!FS.initialized)FS.init();TTY.init();wasmExports["Id"]();FS.ignorePermissions=false}function postRun(){var postRun=Module["postRun"];if(postRun){if(typeof postRun=="function")postRun=[postRun];onPostRuns.push(...postRun)}callRuntimeCallbacks(onPostRuns)}function abort(what){Module["onAbort"]?.(what);what=`Aborted(${what})`;err(what);ABORT=true;what+=
 ```
 
-### 6. run() in JS
+### 7. run() in JS
 
 ```
 async function run(args=programArgs){preRun();if(runDependencies){await resolveRunDependencies()}var setStatus=Module["setStatus"];if(setStatus){setStatus("Running...");await new Promise(resolve=>setTimeout(resolve,1));setTimeout(setStatus,1,"")}if(ABORT)return;initRuntime();Module["onRuntimeInitialized"]?.();var noInitialRun=Module["noInitialRun"]||false;if(!noInitialRun)callMain(args);postRun()}var wasmExports;createWasm().then(()=>run());
 ```
 
-### 7. Sizes
+### 8. Sizes
 
 ```
-JS size: 181245 bytes
-WASM size: 2263581 bytes
+JS size: 181235 bytes
+WASM size: 1893932 bytes
 ```
 
