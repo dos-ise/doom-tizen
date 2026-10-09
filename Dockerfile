@@ -56,6 +56,11 @@ COPY --chown=doom . ./doom-tizen
 WORKDIR /home/doom/doom-tizen
 RUN git submodule update --init --recursive
 
+# Apply patch: make the OPL music driver use the plain SDL2 audio API
+# (SDL_OpenAudioDevice + callback) instead of SDL2_mixer, so music works
+# without linking SDL2_mixer (which hangs the game in __wasm_call_ctors).
+RUN cd chocolate-doom && git apply /home/doom/doom-tizen/patches/opl-sdl-native-audio.patch
+
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 
@@ -76,9 +81,7 @@ ENV EMSCRIPTEN_FLAGS="\
 -s ASSERTIONS=0 \
 -s DISABLE_EXCEPTION_CATCHING=1 \
 -s WASM_BIGINT=0 \
--s USE_SDL=2 \
--s USE_SDL_MIXER=2 \
--s SDL2_MIXER_FORMATS='[]'"
+-s USE_SDL=2"
 
 # Tizen 5.5 (2020 sets) runs Chromium 69: no bulk memory, non-trapping float-to-int or BigInt
 # at the JS/WASM boundary (WASM_BIGINT=0 above). Sign-extension ops do work there, but they are
@@ -93,7 +96,7 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
 		-DEMSCRIPTEN=1 \
-        -DENABLE_SDL2_MIXER=ON \
+        -DENABLE_SDL2_MIXER=OFF \
         -DENABLE_SDL2_NET=OFF \
         -DCMAKE_C_FLAGS=\"$CFLAGS\" \
         -DCMAKE_CXX_FLAGS=\"$CXXFLAGS\" \

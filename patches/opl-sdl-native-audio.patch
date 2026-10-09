@@ -1,0 +1,185 @@
+diff --git a/opl/opl_sdl.c b/opl/opl_sdl.c
+index 3dfeffdf..6731a4b0 100644
+--- a/opl/opl_sdl.c
++++ b/opl/opl_sdl.c
+@@ -36,7 +36,9 @@
+ #include "opl_queue.h"
+ 
+ 
+-#ifndef DISABLE_SDL2MIXER
++// The OPL SDL driver is compiled even without SDL2_mixer: it uses the
++// plain SDL2 audio API (SDL_OpenAudioDevice + callback) instead.
++#if 1
+ 
+ 
+ #define MAX_SOUND_SLICE_TIME 100 /* ms */
+@@ -84,6 +86,10 @@ static int opl_opl3mode;
+ 
+ static uint8_t *mix_buffer = NULL;
+ 
++// Audio device ID returned by SDL_OpenAudioDevice.
++
++static SDL_AudioDeviceID audio_device_id = 0;
++
+ // Register number that was written.
+ 
+ static int register_num = 0;
+@@ -101,10 +107,9 @@ static Uint16 mixing_format;
+ 
+ static int SDLIsInitialized(void)
+ {
+-    int freq, channels;
+-    Uint16 format;
+-
+-    return Mix_QuerySpec(&freq, &format, &channels);
++    // Without SDL2_mixer there is no shared mixer; the OPL driver always
++    // opens its own audio device.
++    return 0;
+ }
+ 
+ // Advance time by the specified number of samples, invoking any
+@@ -229,13 +234,19 @@ static void OPL_Mix_Callback(int chan, void *stream, int len, void *udata)
+     }
+ }
+ 
+-static void OPL_SDL_Shutdown(void)
++// SDL audio callback: generates OPL samples into the stream. Used instead
++// of SDL2_mixer's Mix_RegisterEffect post-mix hook.
++static void OPL_SDL_AudioCallback(void *userdata, Uint8 *stream, int len)
+ {
+-    Mix_HookMusic(NULL, NULL);
++    OPL_Mix_Callback(0, stream, len, NULL);
++}
+ 
++static void OPL_SDL_Shutdown(void)
++{
+     if (sdl_was_initialized)
+     {
+-        Mix_CloseAudio();
++        SDL_CloseAudioDevice(audio_device_id);
++        audio_device_id = 0;
+         SDL_QuitSubSystem(SDL_INIT_AUDIO);
+         OPL_Queue_Destroy(callback_queue);
+         free(mix_buffer);
+@@ -300,68 +311,72 @@ static int OPL_SDL_Init(unsigned int port_base)
+             return 0;
+         }
+ 
+-        if (Mix_OpenAudioDevice(opl_sample_rate, AUDIO_S16SYS, 2, GetSliceSize(), NULL, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE) < 0)
+-        {
+-            fprintf(stderr, "Error initialising SDL_mixer: %s\n", Mix_GetError());
+-
+-            SDL_QuitSubSystem(SDL_INIT_AUDIO);
+-            return 0;
+-        }
+-
+-        SDL_PauseAudio(0);
+-
+-        // When this module shuts down, it has the responsibility to 
+-        // shut down SDL.
+-
+-        sdl_was_initialized = 1;
+-    }
+-    else
+-    {
+-        sdl_was_initialized = 0;
+-    }
+-
+-    opl_sdl_paused = 0;
+-    pause_offset = 0;
++            // Create the callback queue and mutexes before opening the device,
++            // since the audio callback may fire as soon as the device is opened.
++            callback_queue = OPL_Queue_Create();
++            current_time = 0;
++            callback_mutex = SDL_CreateMutex();
++            callback_queue_mutex = SDL_CreateMutex();
++
++            SDL_AudioSpec want, have;
++            SDL_zero(want);
++            want.freq = opl_sample_rate;
++            want.format = AUDIO_S16SYS;
++            want.channels = 2;
++            want.samples = GetSliceSize();
++            want.callback = OPL_SDL_AudioCallback;
++
++            if ((audio_device_id = SDL_OpenAudioDevice(NULL, 0, &want, &have,
++                                    SDL_AUDIO_ALLOW_FREQUENCY_CHANGE)) == 0)
++            {
++                fprintf(stderr, "Error initialising SDL audio: %s\n",
++                        SDL_GetError());
+ 
+-    // Queue structure of callbacks to invoke.
++                SDL_QuitSubSystem(SDL_INIT_AUDIO);
++                return 0;
++            }
+ 
+-    callback_queue = OPL_Queue_Create();
+-    current_time = 0;
++            mixing_freq = have.freq;
++            mixing_format = have.format;
++            mixing_channels = have.channels;
+ 
+-    // Get the mixer frequency, format and number of channels.
++            SDL_PauseAudio(0);
+ 
+-    Mix_QuerySpec(&mixing_freq, &mixing_format, &mixing_channels);
++            // When this module shuts down, it has the responsibility to 
++            // shut down SDL.
+ 
+-    // Only supports AUDIO_S16SYS
++            sdl_was_initialized = 1;
++        }
++        else
++        {
++            sdl_was_initialized = 0;
++        }
+ 
+-    if (mixing_format != AUDIO_S16SYS || mixing_channels != 2)
+-    {
+-        fprintf(stderr, 
+-                "OPL_SDL only supports native signed 16-bit LSB, "
+-                "stereo format!\n");
++        opl_sdl_paused = 0;
++        pause_offset = 0;
+ 
+-        OPL_SDL_Shutdown();
+-        return 0;
+-    }
++        // Only supports AUDIO_S16SYS
+ 
+-    // Mix buffer: four bytes per sample (16 bits * 2 channels):
+-    mix_buffer = malloc(mixing_freq * 4);
++        if (mixing_format != AUDIO_S16SYS || mixing_channels != 2)
++        {
++            fprintf(stderr, 
++                    "OPL_SDL only supports native signed 16-bit LSB, "
++                    "stereo format!\n");
+ 
+-    // Create the emulator structure:
++            OPL_SDL_Shutdown();
++            return 0;
++        }
+ 
+-    OPL3_Reset(&opl_chip, mixing_freq);
+-    opl_opl3mode = 0;
++        // Mix buffer: four bytes per sample (16 bits * 2 channels):
++        mix_buffer = malloc(mixing_freq * 4);
+ 
+-    callback_mutex = SDL_CreateMutex();
+-    callback_queue_mutex = SDL_CreateMutex();
++        // Create the emulator structure:
+ 
+-    // Set postmix that adds the OPL music. This is deliberately done
+-    // as a postmix and not using Mix_HookMusic() as the latter disables
+-    // normal SDL_mixer music mixing.
+-    Mix_RegisterEffect(MIX_CHANNEL_POST, OPL_Mix_Callback, NULL, NULL);
++        OPL3_Reset(&opl_chip, mixing_freq);
++        opl_opl3mode = 0;
+ 
+-    return 1;
+-}
++        return 1;
++    }
+ 
+ static unsigned int OPL_SDL_PortRead(opl_port_t port)
+ {
