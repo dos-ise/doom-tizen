@@ -61,6 +61,11 @@ RUN git submodule update --init --recursive
 # without linking SDL2_mixer (which hangs the game in __wasm_call_ctors).
 RUN cd chocolate-doom && git apply /home/doom/doom-tizen/patches/opl-sdl-native-audio.patch
 
+# Apply patch: make the SFX driver use the plain SDL2 audio API
+# (SDL_OpenAudioDevice + callback) instead of SDL2_mixer, so sound effects
+# work without linking SDL2_mixer.
+RUN cd chocolate-doom && git apply /home/doom/doom-tizen/patches/sfx-native-audio.patch
+
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 

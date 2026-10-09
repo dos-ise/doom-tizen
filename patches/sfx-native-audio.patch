@@ -1,0 +1,243 @@
+diff --git a/src/i_sdlsound.c b/src/i_sdlsound.c
+--- a/src/i_sdlsound.c
++++ b/src/i_sdlsound.c
+@@ -52,9 +52,16 @@ int use_libsamplerate = 0;
+ float libsamplerate_scale = 0.65f;
+ 
+ 
+-#ifndef DISABLE_SDL2MIXER
++#if 1
+ 
+-#include "SDL_mixer.h"
++// Minimal chunk structure (replaces Mix_Chunk from SDL_mixer).
++
++typedef struct
++{
++    Uint8 *abuf;
++    Uint32 alen;
++    int volume;
++} sfx_chunk_t;
+ 
+ 
+ #define LOW_PASS_FILTER
+@@ -66,7 +73,7 @@ typedef struct allocated_sound_s allocated_sound_t;
+ struct allocated_sound_s
+ {
+     sfxinfo_t *sfxinfo;
+-    Mix_Chunk chunk;
++    sfx_chunk_t chunk;
+     int use_count;
+     int pitch;
+     allocated_sound_t *prev, *next;
+@@ -76,6 +83,56 @@ static boolean sound_initialized = false;
+ 
+ static allocated_sound_t *channels_playing[NUM_CHANNELS];
+ 
++// Per-channel playback state for the native SDL audio mixer.
++
++static int channel_positions[NUM_CHANNELS];
++static int channel_left_vol[NUM_CHANNELS];
++static int channel_right_vol[NUM_CHANNELS];
++static SDL_AudioDeviceID sfx_audio_device = 0;
++
++// Mix all playing channels into the output buffer (S16 -> F32).
++// The Emscripten SDL2 audio driver only supports F32.
++
++static void SFX_AudioCallback(void *userdata, Uint8 *stream, int len)
++{
++    float *dst = (float *) stream;
++    int frames = len / (2 * sizeof(float));
++    int c;
++
++    memset(stream, 0, len);
++
++    for (c = 0; c < NUM_CHANNELS; ++c)
++    {
++        allocated_sound_t *snd = channels_playing[c];
++        Sint16 *src;
++        int src_frames;
++        int f;
++
++        if (snd == NULL)
++        {
++            continue;
++        }
++
++        src = (Sint16 *) snd->chunk.abuf;
++        src_frames = (int) (snd->chunk.alen / (2 * sizeof(Sint16)));
++
++        for (f = 0; f < frames; ++f)
++        {
++            int pos = channel_positions[c];
++
++            if (pos >= src_frames)
++            {
++                break;
++            }
++
++            dst[f * 2] += (float) src[pos * 2] * channel_left_vol[c] / (255.0f * 32768.0f);
++            dst[f * 2 + 1] += (float) src[pos * 2 + 1] * channel_right_vol[c] / (255.0f * 32768.0f);
++
++            channel_positions[c] = pos + 1;
++        }
++    }
++}
++
+ static int mixer_freq;
+ static Uint16 mixer_format;
+ static int mixer_channels;
+@@ -231,8 +288,7 @@ static allocated_sound_t *AllocateSound(sfxinfo_t *sfxinfo, size_t len)
+ 
+     snd->chunk.abuf = (byte *) (snd + 1);
+     snd->chunk.alen = len;
+-    snd->chunk.allocated = 1;
+-    snd->chunk.volume = MIX_MAX_VOLUME;
++    snd->chunk.volume = 128;
+     snd->pitch = NORM_PITCH;
+ 
+     snd->sfxinfo = sfxinfo;
+@@ -348,7 +404,7 @@ static void ReleaseSoundOnChannel(int channel)
+ {
+     allocated_sound_t *snd = channels_playing[channel];
+ 
+-    Mix_HaltChannel(channel);
++    channel_positions[channel] = 0;
+ 
+     if (snd == NULL)
+     {
+@@ -415,7 +471,7 @@ static boolean ExpandSoundData_SRC(sfxinfo_t *sfxinfo,
+     int retn;
+     int16_t *expanded;
+     allocated_sound_t *snd;
+-    Mix_Chunk *chunk;
++    sfx_chunk_t *chunk;
+ 
+     src_data.input_frames = length;
+     data_in = malloc(length * sizeof(float));
+@@ -608,7 +664,7 @@ static boolean ExpandSoundData_SDL(sfxinfo_t *sfxinfo,
+ {
+     SDL_AudioCVT convertor;
+     allocated_sound_t *snd;
+-    Mix_Chunk *chunk;
++    sfx_chunk_t *chunk;
+     uint32_t expanded_length;
+ 
+     // Calculate the length of the expanded version of the sample.
+@@ -894,7 +950,8 @@ static void I_SDL_UpdateSoundParams(int handle, int vol, int sep)
+     if (right < 0) right = 0;
+     else if (right > 255) right = 255;
+ 
+-    Mix_SetPanning(handle, left, right);
++    channel_left_vol[handle] = left;
++    channel_right_vol[handle] = right;
+ }
+ 
+ //
+@@ -963,7 +1020,9 @@ static int I_SDL_StartSound(sfxinfo_t *sfxinfo, int channel, int vol, int sep, i
+ 
+     // play sound
+ 
+-    Mix_PlayChannel(channel, &snd->chunk, 0);
++    channel_positions[channel] = 0;
++    channel_left_vol[channel] = 255;
++    channel_right_vol[channel] = 255;
+ 
+     channels_playing[channel] = snd;
+ 
+@@ -995,7 +1054,13 @@ static boolean I_SDL_SoundIsPlaying(int handle)
+         return false;
+     }
+ 
+-    return Mix_Playing(handle);
++    if (channels_playing[handle] == NULL)
++    {
++        return false;
++    }
++
++    return channel_positions[handle] <
++           (int) (channels_playing[handle]->chunk.alen / (2 * sizeof(Sint16)));
+ }
+ 
+ //
+@@ -1027,7 +1092,11 @@ static void I_SDL_ShutdownSound(void)
+         return;
+     }
+ 
+-    Mix_CloseAudio();
++    if (sfx_audio_device != 0)
++    {
++        SDL_CloseAudioDevice(sfx_audio_device);
++        sfx_audio_device = 0;
++    }
+     SDL_QuitSubSystem(SDL_INIT_AUDIO);
+ 
+     sound_initialized = false;
+@@ -1078,16 +1147,31 @@ static boolean I_SDL_InitSound(GameMission_t mission)
+         return false;
+     }
+ 
+-    if (Mix_OpenAudioDevice(snd_samplerate, AUDIO_S16SYS, 2, GetSliceSize(), NULL, SDL_AUDIO_ALLOW_FREQUENCY_CHANGE) < 0)
+     {
+-        fprintf(stderr, "Error initialising SDL_mixer: %s\n", Mix_GetError());
+-        return false;
++        SDL_AudioSpec want, have;
++
++        SDL_zero(want);
++        want.freq = snd_samplerate;
++        want.format = AUDIO_F32;
++        want.channels = 2;
++        want.samples = GetSliceSize();
++        want.callback = SFX_AudioCallback;
++
++        sfx_audio_device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
++
++        if (sfx_audio_device == 0)
++        {
++            fprintf(stderr, "Error initialising SDL audio: %s\n", SDL_GetError());
++            return false;
++        }
++
++        mixer_freq = have.freq;
++        mixer_format = AUDIO_S16SYS;
++        mixer_channels = 2;
+     }
+ 
+     ExpandSoundData = ExpandSoundData_SDL;
+ 
+-    Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels);
+-
+ #ifdef HAVE_LIBSAMPLERATE
+     if (use_libsamplerate != 0)
+     {
+@@ -1108,9 +1192,7 @@ static boolean I_SDL_InitSound(GameMission_t mission)
+     }
+ #endif
+ 
+-    Mix_AllocateChannels(NUM_CHANNELS);
+-
+-    SDL_PauseAudio(0);
++    SDL_PauseAudioDevice(sfx_audio_device, 0);
+ 
+     sound_initialized = true;
+ 
+@@ -1143,4 +1225,4 @@ const sound_module_t sound_sdl_module =
+ };
+ 
+ 
+-#endif // DISABLE_SDL2MIXER
++#endif
+diff --git a/src/i_sound.c b/src/i_sound.c
+--- a/src/i_sound.c
++++ b/src/i_sound.c
+@@ -85,9 +85,9 @@ static int snd_mport = 0;
+ 
+ static const sound_module_t *sound_modules[] =
+ {
+-#ifndef DISABLE_SDL2MIXER
++#if 1
+     &sound_sdl_module,
+-#endif // DISABLE_SDL2MIXER
++#endif
+     &sound_pcsound_module,
+     NULL,
+ };
