@@ -1,0 +1,3 @@
+# Force LF line endings for shell scripts (git autocrlf would otherwise
+# convert them to CRLF on checkout, breaking them in the CI container).
+*.sh text eol=lf
