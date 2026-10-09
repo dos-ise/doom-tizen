@@ -1,3 +1,5 @@
-# Force LF line endings for shell scripts (git autocrlf would otherwise
-# convert them to CRLF on checkout, breaking them in the CI container).
+# Force LF line endings for shell scripts and patches (git autocrlf would
+# otherwise convert them to CRLF on checkout, breaking them in the CI
+# container / Docker build).
 *.sh text eol=lf
+*.patch text eol=lf
