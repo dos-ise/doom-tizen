@@ -134,6 +134,18 @@ jobs:
       - name: Copy artifacts from Docker container
         run: |
           docker cp temp_container:/home/doom/Doom.wgt .
+          docker cp temp_container:/home/doom/doom-tizen/wasm/chocolate-doom.js .
+          docker cp temp_container:/home/doom/doom-tizen/wasm/chocolate-doom.wasm .
+      # Uploads the generated JS/WASM as build artifacts so they can be
+      # inspected directly (release assets are not always reachable).
+      - name: Upload JS/WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: chocolate-doom-js-wasm
+          path: |
+            chocolate-doom.js
+            chocolate-doom.wasm
+          if-no-files-found: error
       # Stops and removes the temporary Docker container to clean up resources.
       - name: Stop and remove Docker container
         run: |
