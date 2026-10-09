@@ -75,10 +75,7 @@ ENV EMSCRIPTEN_FLAGS="\
 -s EXIT_RUNTIME=0 \
 -s ASSERTIONS=0 \
 -s DISABLE_EXCEPTION_CATCHING=1 \
--s WASM_BIGINT=0 \
--s USE_SDL=2 \
--s USE_SDL_MIXER=2 \
--s SDL2_MIXER_FORMATS='[]'"
+-s WASM_BIGINT=0"
 
 # Tizen 5.5 (2020 sets) runs Chromium 69: no bulk memory, non-trapping float-to-int or BigInt
 # at the JS/WASM boundary (WASM_BIGINT=0 above). Sign-extension ops do work there, but they are
@@ -93,7 +90,7 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
 		-DEMSCRIPTEN=1 \
-        -DENABLE_SDL2_MIXER=ON \
+        -DENABLE_SDL2_MIXER=OFF \
         -DENABLE_SDL2_NET=OFF \
         -DCMAKE_C_FLAGS=\"$CFLAGS\" \
         -DCMAKE_CXX_FLAGS=\"$CXXFLAGS\" \
@@ -121,13 +118,13 @@ RUN if [ "$TIZEN55_COMPAT" = "1" ]; then \
 
 # Emscripten's prebuilt libc (memcpy/memset) still uses bulk memory, so lower the linked
 # module to the MVP instruction set Chromium 69 accepts, and fail the build if anything is left.
-# The second pass (--mvp-features) is skipped: it can produce a broken module that hangs in
-# __wasm_call_ctors() when SDL2_mixer is linked. The explicit feature lowering above is enough.
 RUN /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm \
         --enable-bulk-memory --enable-bulk-memory-opt --enable-sign-ext \
         --enable-nontrapping-float-to-int --enable-mutable-globals \
         --llvm-memory-copy-fill-lowering --signext-lowering --llvm-nontrapping-fptoint-lowering \
-        -o /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm
+        -o /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered && \
+    /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered --mvp-features -o /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm && \
+    rm /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered
 
 # Copy compiled files
 RUN cp /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js /home/doom/doom-tizen/wasm/
