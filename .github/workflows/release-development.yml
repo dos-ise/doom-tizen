@@ -215,6 +215,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RELEASE_ID=$(gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" --json id --jq '.id')
+          jq -n --rawfile body analysis.md '{body: $body}' > /tmp/comment.json
           gh api "repos/${{ github.repository }}/releases/$RELEASE_ID/comments" \
-            -f body="$(cat analysis.md)" \
+            --input /tmp/comment.json \
             --jq '.html_url'
