@@ -56,6 +56,11 @@ COPY --chown=doom . ./doom-tizen
 WORKDIR /home/doom/doom-tizen
 RUN git submodule update --init --recursive
 
+# Apply patch: add ASYNCIFY_IGNORE_INDIRECT to reduce ASYNCIFY
+# instrumentation, testing whether the __wasm_call_ctors hang with
+# SDL2_mixer is caused by ASYNCIFY.
+RUN cd chocolate-doom && git apply /home/doom/doom-tizen/patches/asyncify-ignore-indirect.patch
+
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 
