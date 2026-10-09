@@ -150,11 +150,8 @@ jobs:
             chocolate-doom.js
             chocolate-doom.wasm
           if-no-files-found: error
-      # Analyzes the generated JS/WASM and posts findings as a GitHub issue
-      # comment (the API works even when artifact downloads are proxied).
-      - name: Analyze WASM/JS and post findings
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Analyzes the generated JS/WASM and saves findings to analysis.md.
+      - name: Analyze WASM/JS
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq binaryen >/dev/null
           chmod +x scripts/analyze-wasm.sh
@@ -204,3 +201,15 @@ jobs:
             --notes "$NOTES" \
             $PRERELEASE \
             --repo "${{ github.repository }}"
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+      # Posts the WASM/JS analysis as a comment on the release (the API works
+      # even when artifact downloads are proxied).
+      - name: Post analysis to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" --json id --jq '.id' > /tmp/release_id.txt
+          RELEASE_ID=$(cat /tmp/release_id.txt)
+          gh api "repos/${{ github.repository }}/releases/$RELEASE_ID/comments" \
+            -f body="$(cat analysis.md)" \
+            --jq '.html_url'
