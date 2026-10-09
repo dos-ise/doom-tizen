@@ -134,6 +134,31 @@ jobs:
       - name: Copy artifacts from Docker container
         run: |
           docker cp temp_container:/home/doom/Doom.wgt .
+      # Extracts the generated JS/WASM from the WGT (a zip) so they can be
+      # inspected directly (release assets are not always reachable).
+      - name: Extract JS/WASM from WGT
+        run: |
+          mkdir -p wgt_extract
+          unzip -o Doom.wgt -d wgt_extract
+          cp wgt_extract/chocolate-doom.js .
+          cp wgt_extract/chocolate-doom.wasm .
+      - name: Upload JS/WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: chocolate-doom-js-wasm
+          path: |
+            chocolate-doom.js
+            chocolate-doom.wasm
+          if-no-files-found: error
+      # Analyzes the generated JS/WASM inside the container (which has the
+      # emsdk's wasm-dis) and saves findings to analysis.md.
+      - name: Analyze WASM/JS
+        run: |
+          docker cp chocolate-doom.js temp_container:/tmp/chocolate-doom.js
+          docker cp chocolate-doom.wasm temp_container:/tmp/chocolate-doom.wasm
+          docker cp scripts/analyze-wasm.sh temp_container:/tmp/analyze-wasm.sh
+          docker exec temp_container bash -lc "source /home/doom/emsdk/emsdk_env.sh >/dev/null 2>&1; bash /tmp/analyze-wasm.sh /tmp/chocolate-doom.wasm /tmp/chocolate-doom.js"
+          docker cp temp_container:/tmp/analysis.md analysis.md
       # Stops and removes the temporary Docker container to clean up resources.
       - name: Stop and remove Docker container
         run: |
@@ -179,3 +204,15 @@ jobs:
             --notes "$NOTES" \
             $PRERELEASE \
             --repo "${{ github.repository }}"
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+      # Posts the WASM/JS analysis as a comment on the release (the API works
+      # even when artifact downloads are proxied).
+      - name: Post analysis to release
+        if: hashFiles('analysis.md') != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_ID=$(gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" --json id --jq '.id')
+          gh api "repos/${{ github.repository }}/releases/$RELEASE_ID/comments" \
+            -f body="$(cat analysis.md)" \
+            --jq '.html_url'
