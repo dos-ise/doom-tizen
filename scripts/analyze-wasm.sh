@@ -11,6 +11,15 @@ if command -v wasm-dis >/dev/null 2>&1; then
   DIS=$(wasm-dis "$WASM" 2>/dev/null || true)
 fi
 
+# Check for non-MVP features that Chromium 69 (Tizen 5.5) cannot run.
+NON_MVP=""
+if [ -n "$DIS" ]; then
+  NON_MVP=$(echo "$DIS" | grep -o 'memory\.copy\|memory\.fill\|i32\.extend8_s\|i64\.extend8_s\|i32\.trunc_sat\|i64\.trunc_sat\|v128\|ref\.null\|ref\.func\|table\.get\|table\.set\|call_ref\|return_call' | sort | uniq -c | sort -rn | head -20 || true)
+fi
+if [ -z "$NON_MVP" ]; then
+  NON_MVP="(no non-MVP features found)"
+fi
+
 INIT_SECTION=""
 if [ -n "$DIS" ]; then
   INIT_SECTION=$(echo "$DIS" | grep -i -A 200 'init' | head -80 || true)
@@ -52,49 +61,55 @@ fi
 
 OUT="## WASM/JS analysis
 
-### 1. WASM init section (.init_array -> what __wasm_call_ctors calls)
+### 1. Non-MVP features (Chromium 69 compatibility)
+
+\`\`\`
+$NON_MVP
+\`\`\`
+
+### 2. WASM init section (.init_array -> what __wasm_call_ctors calls)
 
 \`\`\`
 $INIT_SECTION
 \`\`\`
 
-### 2. ELEMENT section (.init_array function list)
+### 3. ELEMENT section (.init_array function list)
 
 \`\`\`
 $ELEM
 \`\`\`
 
-### 3. WASM exports
+### 4. WASM exports
 
 \`\`\`
 $EXPORTS
 \`\`\`
 
-### 4. Reloc/ctor functions
+### 5. Reloc/ctor functions
 
 \`\`\`
 $RELOC
 \`\`\`
 
-### 5. ASYNCIFY markers in JS
+### 6. ASYNCIFY markers in JS
 
 \`\`\`
 $ASYNCIFY_MARKERS
 \`\`\`
 
-### 6. initRuntime() in JS
+### 7. initRuntime() in JS
 
 \`\`\`
 $FLOW
 \`\`\`
 
-### 7. run() in JS
+### 8. run() in JS
 
 \`\`\`
 $RUNFLOW
 \`\`\`
 
-### 8. Sizes
+### 9. Sizes
 
 \`\`\`
 JS size: $(wc -c < "$JS" 2>/dev/null || echo '?') bytes
