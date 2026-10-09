@@ -173,14 +173,15 @@ Other moonlight-tizen techniques that do not apply to Doom:
 
 ## Notes
 
-- **SDL2_mixer must be enabled** (`ENABLE_SDL2_MIXER=ON` + `-s USE_SDL2=2` +
-  `-s USE_SDL2_MIXER=2`): the SDL sound module (`i_sdlsound.c`) genuinely uses
+- **SDL2_mixer must be enabled** (`ENABLE_SDL2_MIXER=ON` + `-s USE_SDL=2` +
+  `-s USE_SDL_MIXER=2`): the SDL sound module (`i_sdlsound.c`) genuinely uses
   SDL2_mixer (`Mix_Chunk`, `Mix_PlayChannel`). Disabling SDL2_mixer defines
   `DISABLE_SDL2MIXER`, which excludes the whole SDL sound module and leaves only
   PC speaker emulation (no sound). This broke sound in PR #5 when the Dockerfile
   flag was renamed from the ignored `WITH_SDL_MIXER=OFF` to the effective
-  `ENABLE_SDL2_MIXER=OFF`. The SDL2_mixer Emscripten port requires the SDL2 port
-  (`-s USE_SDL2=2`) to be enabled as well.
+  `ENABLE_SDL2_MIXER=OFF`. Note: the Emscripten settings are `USE_SDL` and
+  `USE_SDL_MIXER` (not `USE_SDL2`/`USE_SDL2_MIXER` – those don't exist and fail
+  the build).
 - The audio settings (`snd_samplerate`, `snd_cachesize`) and `startup_delay`
   were part of PR #4 and are currently reverted to their defaults (see
   [remote-control-debugging.md](remote-control-debugging.md)).
