@@ -150,6 +150,15 @@ jobs:
             chocolate-doom.js
             chocolate-doom.wasm
           if-no-files-found: error
+      # Analyzes the generated JS/WASM and posts findings as a GitHub issue
+      # comment (the API works even when artifact downloads are proxied).
+      - name: Analyze WASM/JS and post findings
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq binaryen >/dev/null
+          chmod +x scripts/analyze-wasm.sh
+          ./scripts/analyze-wasm.sh chocolate-doom.wasm chocolate-doom.js
       # Stops and removes the temporary Docker container to clean up resources.
       - name: Stop and remove Docker container
         run: |
