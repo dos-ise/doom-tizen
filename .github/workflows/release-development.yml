@@ -150,15 +150,17 @@ jobs:
             chocolate-doom.js
             chocolate-doom.wasm
           if-no-files-found: error
-      # Analyzes the generated JS/WASM inside the container (which has the
-      # emsdk's wasm-dis) and saves findings to analysis.md.
+      # Analyzes the generated JS/WASM and saves findings to analysis.md.
+      # Non-blocking: a failure here must not prevent the release from being
+      # created. Downloads binaryen 133 (matching the emsdk) for wasm-dis.
       - name: Analyze WASM/JS
         run: |
-          docker cp chocolate-doom.js temp_container:/tmp/chocolate-doom.js
-          docker cp chocolate-doom.wasm temp_container:/tmp/chocolate-doom.wasm
-          docker cp scripts/analyze-wasm.sh temp_container:/tmp/analyze-wasm.sh
-          docker exec temp_container bash -lc "cd /tmp && source /home/doom/emsdk/emsdk_env.sh >/dev/null 2>&1; bash /tmp/analyze-wasm.sh /tmp/chocolate-doom.wasm /tmp/chocolate-doom.js"
-          docker cp temp_container:/tmp/analysis.md analysis.md
+          set +e
+          curl -sL https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz -o /tmp/binaryen.tar.gz
+          tar -xzf /tmp/binaryen.tar.gz -C /tmp
+          export PATH="/tmp/binaryen-version_133/bin:$PATH"
+          bash scripts/analyze-wasm.sh chocolate-doom.wasm chocolate-doom.js
+          echo "analysis_exit=$?" >> "$GITHUB_ENV"
       # Stops and removes the temporary Docker container to clean up resources.
       - name: Stop and remove Docker container
         run: |
