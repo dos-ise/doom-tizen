@@ -207,14 +207,17 @@ jobs:
             $PRERELEASE \
             --repo "${{ github.repository }}"
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
-      # Posts the WASM/JS analysis as a comment on the release (the API works
-      # even when artifact downloads are proxied).
-      - name: Post analysis to release
+      # Posts the WASM/JS analysis by committing it to the repo (release
+      # comments are disabled in this repo; artifacts are not downloadable).
+      - name: Commit analysis to repo
         if: hashFiles('analysis.md') != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_ID=$(gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" --json id --jq '.id')
-          gh api "repos/${{ github.repository }}/releases/$RELEASE_ID/comments" \
-            -f body="$(cat analysis.md)" \
-            --jq '.html_url'
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p analysis
+          cp analysis.md analysis/latest.md
+          git add analysis/latest.md
+          git commit -m "Update WASM/JS analysis" || echo "no changes to commit"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" "HEAD:${{ github.ref_name }}" || echo "push failed"

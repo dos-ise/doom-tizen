@@ -1,18 +1,33 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # Analyzes the generated chocolate-doom.js/.wasm to pinpoint the startup
 # hang in Emscripten initRuntime() -> __wasm_call_ctors().
-# Writes the findings to analysis.md (posted to the release by the workflow).
-# Runs inside the Docker container which has the emsdk's wasm-dis.
+# Writes the findings to analysis.md (committed to the repo by the workflow).
 
 WASM="$1"
 JS="$2"
 
-INIT_SECTION=""
+DIS=""
 if command -v wasm-dis >/dev/null 2>&1; then
-  INIT_SECTION=$(wasm-dis "$WASM" 2>/dev/null | grep -A 200 '(section .init' | head -60 || true)
+  DIS=$(wasm-dis "$WASM" 2>/dev/null || true)
+fi
+
+INIT_SECTION=""
+if [ -n "$DIS" ]; then
+  INIT_SECTION=$(echo "$DIS" | grep -i -A 200 'init' | head -80 || true)
 fi
 if [ -z "$INIT_SECTION" ]; then
-  INIT_SECTION="(wasm-dis produced no init section output)"
+  INIT_SECTION="(no init section found in wasm-dis output)"
+fi
+
+EXPORTS=$(echo "$DIS" | grep -A 200 '(export ' | head -60 || true)
+if [ -z "$EXPORTS" ]; then
+  EXPORTS="(no exports found)"
+fi
+
+# Look for the data relocation function and any ctor-like functions
+RELOC=$(echo "$DIS" | grep -B 2 -A 40 'apply_data_relocs\|__wasm_call_ctors\|call_ctors' | head -60 || true)
+if [ -z "$RELOC" ]; then
+  RELOC="(no reloc/ctor functions found by name)"
 fi
 
 ASYNCIFY_MARKERS=$(grep -o 'asyncify[A-Za-z_]*' "$JS" 2>/dev/null | sort -u | head -30 || true)
@@ -20,12 +35,15 @@ if [ -z "$ASYNCIFY_MARKERS" ]; then
   ASYNCIFY_MARKERS="(no asyncify markers found)"
 fi
 
-FLOW=$(grep -n 'function run\|function initRuntime\|__wasm_call_ctors\|onRuntimeInitialized\|setStatus' "$JS" 2>/dev/null | head -40 || true)
+FLOW=$(grep -o 'function initRuntime(){.\{0,400\}' "$JS" 2>/dev/null | head -3 || true)
 if [ -z "$FLOW" ]; then
-  FLOW="(no flow markers found)"
+  FLOW="(no initRuntime found)"
 fi
 
-SETTINGS=$(grep -o 'ALLOW_MEMORY_GROWTH=[0-9]*\|ASYNCIFY=[0-9]*\|WASM_BIGINT=[0-9]*' "$JS" 2>/dev/null | sort -u | head -10 || true)
+RUNFLOW=$(grep -o 'async function run(.\{0,600\}' "$JS" 2>/dev/null | head -3 || true)
+if [ -z "$RUNFLOW" ]; then
+  RUNFLOW="(no run() found)"
+fi
 
 OUT="## WASM/JS analysis
 
@@ -35,24 +53,41 @@ OUT="## WASM/JS analysis
 $INIT_SECTION
 \`\`\`
 
-### 2. ASYNCIFY markers in JS
+### 2. WASM exports
+
+\`\`\`
+$EXPORTS
+\`\`\`
+
+### 3. Reloc/ctor functions
+
+\`\`\`
+$RELOC
+\`\`\`
+
+### 4. ASYNCIFY markers in JS
 
 \`\`\`
 $ASYNCIFY_MARKERS
 \`\`\`
 
-### 3. run()/initRuntime flow in JS
+### 5. initRuntime() in JS
 
 \`\`\`
 $FLOW
 \`\`\`
 
-### 4. JS size and key settings
+### 6. run() in JS
+
+\`\`\`
+$RUNFLOW
+\`\`\`
+
+### 7. Sizes
 
 \`\`\`
 JS size: $(wc -c < "$JS" 2>/dev/null || echo '?') bytes
 WASM size: $(wc -c < "$WASM" 2>/dev/null || echo '?') bytes
-$SETTINGS
 \`\`\`
 "
 
