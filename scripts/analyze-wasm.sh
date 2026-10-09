@@ -19,6 +19,11 @@ if [ -z "$INIT_SECTION" ]; then
   INIT_SECTION="(no init section found in wasm-dis output)"
 fi
 
+ELEM=$(echo "$DIS" | grep -A 200 '(elem ' | head -40 || true)
+if [ -z "$ELEM" ]; then
+  ELEM="(no elem section found)"
+fi
+
 EXPORTS=$(echo "$DIS" | grep -A 200 '(export ' | head -60 || true)
 if [ -z "$EXPORTS" ]; then
   EXPORTS="(no exports found)"
@@ -53,37 +58,43 @@ OUT="## WASM/JS analysis
 $INIT_SECTION
 \`\`\`
 
-### 2. WASM exports
+### 2. ELEMENT section (.init_array function list)
+
+\`\`\`
+$ELEM
+\`\`\`
+
+### 3. WASM exports
 
 \`\`\`
 $EXPORTS
 \`\`\`
 
-### 3. Reloc/ctor functions
+### 4. Reloc/ctor functions
 
 \`\`\`
 $RELOC
 \`\`\`
 
-### 4. ASYNCIFY markers in JS
+### 5. ASYNCIFY markers in JS
 
 \`\`\`
 $ASYNCIFY_MARKERS
 \`\`\`
 
-### 5. initRuntime() in JS
+### 6. initRuntime() in JS
 
 \`\`\`
 $FLOW
 \`\`\`
 
-### 6. run() in JS
+### 7. run() in JS
 
 \`\`\`
 $RUNFLOW
 \`\`\`
 
-### 7. Sizes
+### 8. Sizes
 
 \`\`\`
 JS size: $(wc -c < "$JS" 2>/dev/null || echo '?') bytes
