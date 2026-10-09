@@ -157,7 +157,7 @@ jobs:
           docker cp chocolate-doom.js temp_container:/tmp/chocolate-doom.js
           docker cp chocolate-doom.wasm temp_container:/tmp/chocolate-doom.wasm
           docker cp scripts/analyze-wasm.sh temp_container:/tmp/analyze-wasm.sh
-          docker exec temp_container bash -lc "source /home/doom/emsdk/emsdk_env.sh >/dev/null 2>&1; bash /tmp/analyze-wasm.sh /tmp/chocolate-doom.wasm /tmp/chocolate-doom.js"
+          docker exec temp_container bash -lc "cd /tmp && source /home/doom/emsdk/emsdk_env.sh >/dev/null 2>&1; bash /tmp/analyze-wasm.sh /tmp/chocolate-doom.wasm /tmp/chocolate-doom.js"
           docker cp temp_container:/tmp/analysis.md analysis.md
       # Stops and removes the temporary Docker container to clean up resources.
       - name: Stop and remove Docker container
