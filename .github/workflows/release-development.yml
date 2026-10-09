@@ -134,10 +134,14 @@ jobs:
       - name: Copy artifacts from Docker container
         run: |
           docker cp temp_container:/home/doom/Doom.wgt .
-          docker cp temp_container:/home/doom/doom-tizen/wasm/chocolate-doom.js .
-          docker cp temp_container:/home/doom/doom-tizen/wasm/chocolate-doom.wasm .
-      # Uploads the generated JS/WASM as build artifacts so they can be
+      # Extracts the generated JS/WASM from the WGT (a zip) so they can be
       # inspected directly (release assets are not always reachable).
+      - name: Extract JS/WASM from WGT
+        run: |
+          mkdir -p wgt_extract
+          unzip -o Doom.wgt -d wgt_extract
+          cp wgt_extract/chocolate-doom.js .
+          cp wgt_extract/chocolate-doom.wasm .
       - name: Upload JS/WASM artifacts
         uses: actions/upload-artifact@v4
         with:
