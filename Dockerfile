@@ -56,12 +56,6 @@ COPY --chown=doom . ./doom-tizen
 WORKDIR /home/doom/doom-tizen
 RUN git submodule update --init --recursive
 
-# Apply patch: always include the SDL sound module (SFX) even without SDL2_mixer.
-# The SDL sound module only uses SDL2 audio, not SDL2_mixer. The SDL2_mixer port
-# fails to build in Emscripten, so we keep it disabled and patch the source.
-# Music still works via the OPL emulator.
-RUN cd chocolate-doom && git apply /home/doom/doom-tizen/patches/sdl-sound-module.patch
-
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 
@@ -81,7 +75,9 @@ ENV EMSCRIPTEN_FLAGS="\
 -s EXIT_RUNTIME=0 \
 -s ASSERTIONS=0 \
 -s DISABLE_EXCEPTION_CATCHING=1 \
--s WASM_BIGINT=0"
+-s WASM_BIGINT=0 \
+-s USE_SDL2=2 \
+-s USE_SDL2_MIXER=2"
 
 # Tizen 5.5 (2020 sets) runs Chromium 69: no bulk memory, non-trapping float-to-int or BigInt
 # at the JS/WASM boundary (WASM_BIGINT=0 above). Sign-extension ops do work there, but they are
@@ -96,7 +92,7 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
 		-DEMSCRIPTEN=1 \
-        -DENABLE_SDL2_MIXER=OFF \
+        -DENABLE_SDL2_MIXER=ON \
         -DENABLE_SDL2_NET=OFF \
         -DCMAKE_C_FLAGS=\"$CFLAGS\" \
         -DCMAKE_CXX_FLAGS=\"$CXXFLAGS\" \
