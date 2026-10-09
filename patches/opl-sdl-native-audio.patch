@@ -191,3 +191,17 @@ index 3dfeffdf..516b61e7 100644
      return 1;
  }
  
+diff --git a/opl/opl.c b/opl/opl.c
+--- a/opl/opl.c
++++ b/opl/opl.c
+@@ -44,8 +44,8 @@ static opl_driver_t *drivers[] =
+ #ifdef _WIN32
+     &opl_win32_driver,
+ #endif
+-#ifndef DISABLE_SDL2MIXER
++#if 1
+     &opl_sdl_driver,
+-#endif // DISABLE_SDL2MIXER
++#endif
+     NULL
+ };
