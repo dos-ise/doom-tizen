@@ -77,7 +77,8 @@ ENV EMSCRIPTEN_FLAGS="\
 -s DISABLE_EXCEPTION_CATCHING=1 \
 -s WASM_BIGINT=0 \
 -s USE_SDL=2 \
--s USE_SDL_MIXER=2"
+-s USE_SDL_MIXER=2 \
+-s SDL2_MIXER_FORMATS='[]'"
 
 # Tizen 5.5 (2020 sets) runs Chromium 69: no bulk memory, non-trapping float-to-int or BigInt
 # at the JS/WASM boundary (WASM_BIGINT=0 above). Sign-extension ops do work there, but they are
