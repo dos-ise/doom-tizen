@@ -46,11 +46,34 @@
             z-index: 100;
             text-shadow: 0 0 10px #0f0;
         }
+
+        /* DIAGNOSTIC overlay: shows the last log lines on screen so the
+           hang location is visible on the TV without remote debugging. */
+        #log {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            max-height: 40%;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.75);
+            color: #0f0;
+            font-size: 13px;
+            line-height: 1.35;
+            padding: 6px 10px;
+            z-index: 200;
+            white-space: pre-wrap;
+            word-break: break-all;
+            pointer-events: none;
+        }
+        #log .err { color: #f66; }
+        #log .warn { color: #ff0; }
     </style>
 </head>
 <body>
     <canvas id="canvas" tabindex="1"></canvas>
     <div id="status">Loading Doom...</div>
+    <div id="log"></div>
 
     <script src="input.js"></script>
 
@@ -59,6 +82,43 @@
 
         const statusElement = document.getElementById('status');
         const canvasElement = document.getElementById('canvas');
+        const logElement = document.getElementById('log');
+
+        // ---- DIAGNOSTIC helpers -------------------------------------------
+        // On-screen log panel: keeps the last MAX_LOG_LINES lines visible so
+        // the exact hang location is readable on the TV screen.
+        const MAX_LOG_LINES = 18;
+        const logLines = [];
+        function logLine(text, cls) {
+            const ts = new Date().toISOString().substr(11, 12);
+            const line = '[' + ts + '] ' + text;
+            logLines.push(line);
+            if (logLines.length > MAX_LOG_LINES) {
+                logLines.shift();
+            }
+            logElement.innerHTML = logLines.map(function (l) {
+                return '<span class="' + (cls || '') + '">' +
+                    l.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</span>\n';
+            }).join('');
+            console.log(line);
+        }
+        function logErr(text) { logLine(text, 'err'); }
+        function logWarn(text) { logLine(text, 'warn'); }
+
+        logLine('index.html loaded, starting game bootstrap...');
+
+        // Watchdog: if the runtime is not initialized within this many ms,
+        // show a prominent error instead of hanging on "Starting game...".
+        const WATCHDOG_MS = 20000;
+        let watchdogFired = false;
+        const watchdog = setTimeout(function () {
+            watchdogFired = true;
+            logErr('WATCHDOG: onRuntimeInitialized not reached after ' +
+                   (WATCHDOG_MS / 1000) + 's. The game is stuck in main() ' +
+                   '(likely audio init). Last log lines above.');
+            statusElement.textContent = 'STUCK - see log below';
+            statusElement.style.color = '#f66';
+        }, WATCHDOG_MS);
 
         // Internal render resolution. The software renderer is the bottleneck,
         // so we render at a low resolution and let CSS upscale to full screen.
@@ -71,7 +131,6 @@
                 "-iwad", "doom1.wad",
                 "-window",
                 "-nogui",
-                "-nomusic",
                 "-config", "default.cfg",
                 "-extraconfig", "chocolate-doom.cfg",
                 "-width", GAME_WIDTH.toString(),
@@ -80,14 +139,14 @@
 
             preRun: [
                 function () {
-                    console.log('preRun: Loading game files...');
+                    logLine('preRun: Loading game files...');
                     try {
                         Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
                         Module.FS_createPreloadedFile('/', 'default.cfg', 'default.cfg', true, false);
                         Module.FS_createPreloadedFile('/', 'chocolate-doom.cfg', 'chocolate-doom.cfg', true, false);
-                        console.log('Files loaded successfully');
+                        logLine('Files loaded successfully');
                     } catch (e) {
-                        console.error('Error loading files:', e);
+                        logErr('Error loading files: ' + e);
                         Module.setStatus('Error loading game files');
                     }
                 }
@@ -96,11 +155,11 @@
             postRun: [],
 
             print: function (text) {
-                console.log('[stdout]', text);
+                logLine(text);
             },
 
             printErr: function (text) {
-                console.error('[stderr]', text);
+                logErr(text);
             },
 
             canvas: (function () {
@@ -118,7 +177,7 @@
 
             setStatus: function (text) {
                 if (text) {
-                    console.log('Status:', text);
+                    logLine('Status: ' + text);
                     statusElement.textContent = text;
                     statusElement.style.display = 'block';
                 } else {
@@ -138,35 +197,42 @@
             },
 
             onRuntimeInitialized: function () {
-                console.log('Runtime initialized successfully');
+                clearTimeout(watchdog);
+                logLine('Runtime initialized successfully');
                 Module.setStatus('');
                 canvasElement.focus();
                 setupRemoteControl();
             },
 
             onAbort: function (what) {
-                console.error('Abort:', what);
+                clearTimeout(watchdog);
+                logErr('Abort: ' + what);
                 Module.setStatus('Game crashed: ' + what);
             },
 
             onExit: function (code) {
-                console.log('Game exited with code:', code);
+                clearTimeout(watchdog);
+                logLine('Game exited with code: ' + code);
                 Module.setStatus('Game exited');
                 try {
                     if (window.tizen && tizen.application) {
                         tizen.application.getCurrentApplication().exit();
                     }
                 } catch (e) {
-                    console.log('Tizen exit failed:', e);
+                    logLine('Tizen exit failed: ' + e);
                 }
             }
         };
 
         window.onerror = function (message, source, lineno, colno, error) {
-            console.error('Global error:', message, 'at', source, lineno, colno);
+            logErr('Global error: ' + message + ' at ' + source + ':' + lineno);
             Module.setStatus('Error: ' + message);
             return false;
         };
+
+        window.addEventListener('unhandledrejection', function (e) {
+            logErr('Unhandled promise rejection: ' + e.reason);
+        });
 
         canvasElement.addEventListener('click', function () {
             canvasElement.focus();
