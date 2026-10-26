@@ -103,7 +103,8 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emmake ninja -C build"
 
 # The generated JS uses syntax newer than Chromium 69 (optional chaining, ??=, private fields).
-# Lower it with esbuild, using the node that ships with emsdk.
+# Lower it with esbuild, using the node that ships with emsdk. It also reads globalThis on its first
+# line, which Chromium only has from 71 and esbuild does not polyfill: the banner defines it.
 # Only needed for Tizen 5.5 (Chromium 69). Disabled by default because it can break
 # input handling on newer engines; enable with --build-arg TIZEN55_COMPAT=1.
 ARG TIZEN55_COMPAT=0
@@ -113,6 +114,7 @@ RUN if [ "$TIZEN55_COMPAT" = "1" ]; then \
     npm init -y >/dev/null && npm install --no-audit --no-fund esbuild@0.24.0 >/dev/null && \
     npx esbuild /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js \
         --target=chrome69 --allow-overwrite --log-level=warning \
+        --banner:js='window.globalThis || (window.globalThis = window);' \
         --outfile=/home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js"; \
   fi
 
