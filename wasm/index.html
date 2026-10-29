@@ -142,6 +142,13 @@
                 Module.setStatus('');
                 canvasElement.focus();
                 setupRemoteControl();
+                // TEMP audio debug (remove after diagnosis)
+                logAudioState('runtime-init');
+                setTimeout(function () { logAudioState('after-3s'); }, 3000);
+                document.addEventListener('keydown', function once() {
+                    document.removeEventListener('keydown', once);
+                    logAudioState('first-keydown');
+                });
             },
 
             onAbort: function (what) {
@@ -161,6 +168,20 @@
                 }
             }
         };
+
+        // TEMP audio debug (remove after diagnosis)
+        function logAudioState(tag) {
+            try {
+                var sdl = window.Module && Module.SDL2;
+                var ctx = sdl && sdl.audioContext;
+                console.log('[audio-debug]', tag,
+                    'SDL2=' + !!sdl,
+                    'audioContext=' + (ctx ? ctx.state : 'none'),
+                    'sampleRate=' + (ctx ? ctx.sampleRate : 'n/a'));
+            } catch (e) {
+                console.error('[audio-debug] error', tag, e);
+            }
+        }
 
         window.onerror = function (message, source, lineno, colno, error) {
             console.error('Global error:', message, 'at', source, lineno, colno);
