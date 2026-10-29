@@ -55,6 +55,8 @@ COPY --chown=doom . ./doom-tizen
 
 WORKDIR /home/doom/doom-tizen
 RUN git submodule update --init --recursive
+# OPL fix for the Emscripten build (see patches/)
+RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0001-Fix-OPL-music-hang-and-detection-failure-under-Emscr.patch
 
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
