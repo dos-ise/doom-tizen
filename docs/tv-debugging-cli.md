@@ -6,6 +6,10 @@ without going through Tizen Studio.
 
 **Location (local dev machine):** `D:\Apps2Samsung-v3.1.0-win-x64\Cli\apps2samsung-cli.exe`
 
+**sdb (Smart Development Bridge):** `C:\tizen-studio\tools\sdb.exe`
+(installed with Tizen Studio CLI, `web-cli_Tizen_Studio_6.1_windows-64.exe --accept-license C:\tizen-studio`).
+Use it for logs and shell access, e.g. `sdb connect <ip>`, `sdb devices`, `sdb dlog`, `sdb shell`.
+
 ## Prerequisites
 
 - TV in Developer Mode, with the PC's IP configured as host.

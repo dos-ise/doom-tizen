@@ -55,6 +55,8 @@ COPY --chown=doom . ./doom-tizen
 
 WORKDIR /home/doom/doom-tizen
 RUN git submodule update --init --recursive
+# OPL fix for the Emscripten build (see patches/)
+RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0001-Fix-OPL-music-hang-and-detection-failure-under-Emscr.patch
 
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
@@ -75,14 +77,15 @@ ENV EMSCRIPTEN_FLAGS="\
 -s EXIT_RUNTIME=0 \
 -s ASSERTIONS=0 \
 -s DISABLE_EXCEPTION_CATCHING=1 \
--s WASM_BIGINT=0"
+-s WASM_BIGINT=0 \
+-s USE_SDL_MIXER=2"
 
 # Tizen 5.5 (2020 sets) runs Chromium 69: no bulk memory, non-trapping float-to-int or BigInt
 # at the JS/WASM boundary (WASM_BIGINT=0 above). Sign-extension ops do work there, but they are
 # lowered as well so the module stays within the MVP feature set. Current Emscripten refuses
 # MIN_CHROME_VERSION below 85, so the features are switched off directly instead.
 ENV WASM_COMPAT="-mno-bulk-memory -mno-bulk-memory-opt -mno-sign-ext -mno-nontrapping-fptoint"
-ENV CFLAGS="-O3 -flto $WASM_COMPAT -DHAVE_DECL_STRCASECMP=1 -DHAVE_DECL_STRNCASECMP=1"
+ENV CFLAGS="-O3 -flto $WASM_COMPAT -s USE_SDL_MIXER=2 -DHAVE_DECL_STRCASECMP=1 -DHAVE_DECL_STRNCASECMP=1"
 ENV CXXFLAGS="-O3 -flto $WASM_COMPAT"
 ENV LDFLAGS="$EMSCRIPTEN_FLAGS $WASM_COMPAT -O3 -flto"
 
@@ -90,7 +93,7 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
 		-DEMSCRIPTEN=1 \
-        -DENABLE_SDL2_MIXER=OFF \
+        -DENABLE_SDL2_MIXER=ON \
         -DENABLE_SDL2_NET=OFF \
         -DCMAKE_C_FLAGS=\"$CFLAGS\" \
         -DCMAKE_CXX_FLAGS=\"$CXXFLAGS\" \
