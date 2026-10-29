@@ -168,6 +168,7 @@ doom-tizen/
 - [Performance Optimization](docs/performance.md)
 - [Building the WGT File](docs/building-wgt.md)
 - [TV Remote Control Regression – Debugging Report](docs/remote-control-debugging.md)
+- [Debugging directly on the TV (Apps2Samsung CLI)](docs/tv-debugging-cli.md)
 
 ---
 
