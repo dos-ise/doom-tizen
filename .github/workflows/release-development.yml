@@ -8,11 +8,6 @@ on:
         description: 'Release version (e.g. 1.0). Leave empty for a timestamped pre-release.'
         required: false
         default: ''
-      tizen55:
-        description: 'Build for Tizen 5.5 (Chromium 69): lowers JS with esbuild. May break input on newer TVs.'
-        required: false
-        default: 'false'
-        type: boolean
 # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
 env:
   REGISTRY: ghcr.io
@@ -58,7 +53,17 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            TIZEN55_COMPAT=${{ github.event.inputs.tizen55 == 'true' && '1' || '0' }}
+            TIZEN55_COMPAT=0
+      # Second variant for 2020 TVs (Tizen 5.5, Chromium 69): JS lowered with esbuild.
+      - name: Build and push Docker image (Tizen 5.5)
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-tizen55
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            TIZEN55_COMPAT=1
   run-and-upload-release:
     runs-on: ubuntu-latest
     needs: build-and-push-image
@@ -131,13 +136,16 @@ jobs:
       - name: Run Docker container
         run: |
           docker run -d --name temp_container $IMAGE_TAG
+          docker run -d --name temp_container_tizen55 ${IMAGE_TAG}-tizen55
       - name: Copy artifacts from Docker container
         run: |
-          docker cp temp_container:/home/doom/Doom.wgt .
-      # Stops and removes the temporary Docker container to clean up resources.
+          docker cp temp_container:/home/doom/Doom.wgt ./Doom.wgt
+          docker cp temp_container_tizen55:/home/doom/Doom.wgt ./Doom-tizen55.wgt
+      # Stops and removes the temporary Docker containers to clean up resources.
       - name: Stop and remove Docker container
         run: |
-          docker stop temp_container && docker rm temp_container
+          docker stop temp_container temp_container_tizen55
+          docker rm temp_container temp_container_tizen55
       # Creates a GitHub release. If a version was provided via workflow_dispatch,
       # it creates a proper release (e.g. v1.0); otherwise a timestamped pre-release.
       - name: Create GitHub release
@@ -153,6 +161,8 @@ jobs:
 
           - Ensure your Samsung TV is running Tizen OS version 5.5 or higher.
 
+          - Use Doom.wgt for newer TVs and Doom-tizen55.wgt for 2020 TVs (Tizen 5.5, Chromium 69).
+
           ## What's Changed:
 
           - Performance: low internal render resolution, fixed key bindings, new TV controls
@@ -166,6 +176,8 @@ jobs:
 
           - Ensure your Samsung TV is running Tizen OS version 5.5 or higher.
 
+          - Use Doom.wgt for newer TVs and Doom-tizen55.wgt for 2020 TVs (Tizen 5.5, Chromium 69).
+
           ## What's Changed:
 
           - Add all the changes you made to this version using bullet points.
@@ -174,7 +186,7 @@ jobs:
           > This is a **pre-release** version intended for development and testing purposes.
           > It may include experimental features and bug fixes, but could be less stable than official releases."
           fi
-          gh release create "$RELEASE_TAG" ./Doom.wgt \
+          gh release create "$RELEASE_TAG" ./Doom.wgt ./Doom-tizen55.wgt \
             --title "$RELEASE_NAME" \
             --notes "$NOTES" \
             $PRERELEASE \

@@ -33,6 +33,11 @@ The easiest way to install the generated `.wgt` file on your Samsung TV is by us
 Download the latest version from [Apps2Samsung](https://github.com/Apps2Samsung/Apps2Samsung/releases/latest) choose Tizen Community as release and choose doom.
 Launch Doom from the TV's app menu
 
+#### Which `.wgt` do I need?
+Each release contains two files:
+- `Doom.wgt` - for newer Samsung TVs.
+- `Doom-tizen55.wgt` - for 2020 TVs (Tizen 5.5, Chromium 69). Built with `--build-arg TIZEN55_COMPAT=1`, which lowers the JS for older engines.
+
 ---
 
 ## Building
