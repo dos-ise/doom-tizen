@@ -7,6 +7,19 @@ Chromium remote debugging port that `sdb` exposes on the TV.
 Replace `<TV-IP>` with the TV address (for example `192.168.178.159`). The sdb
 device port is `26101`.
 
+## 0. Check that the TV is awake
+
+The app only loads when the TV is not in standby. Check the power state before
+starting Doom. The REST API on port `8001` reports it:
+
+```powershell
+(Invoke-RestMethod http://<TV-IP>:8001/api/v2/).device.PowerState
+```
+
+The value must be `on`. If it is `standby`, the TV ignores the app start and the logs
+are incomplete. Ping and `sdb devices` still succeed in standby, so they do not show
+the power state.
+
 ## 1. Restart Doom in debug mode
 
 Doom must be started with the debug flag. The `shell 0` command runs on the TV.
