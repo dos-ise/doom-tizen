@@ -55,6 +55,8 @@ COPY --chown=doom . ./doom-tizen
 
 WORKDIR /home/doom/doom-tizen
 RUN git submodule update --init --recursive
+# Windows checkouts may contain CRLF files; restore LF from the index so the patches apply
+RUN git -C chocolate-doom checkout -- .
 # OPL fix for the Emscripten build (see patches/)
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0001-Fix-OPL-music-hang-and-detection-failure-under-Emscr.patch
 # Skip the startup sound precache, which takes ~2.2 s in the browser (see patches/)
@@ -70,7 +72,7 @@ ENV EMSCRIPTEN_FLAGS="\
 -s INITIAL_MEMORY=268435456 \
 -s STACK_SIZE=5242880 \
 -s EXPORTED_FUNCTIONS=['_main'] \
--s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','FS','FS_createPreloadedFile'] \
+-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','callMain','FS','FS_createPreloadedFile'] \
 -s MODULARIZE=0 \
 -s EXPORT_NAME='Module' \
 -s ENVIRONMENT='web' \

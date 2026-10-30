@@ -67,6 +67,9 @@
         const GAME_HEIGHT = 540;
 
         var Module = {
+            // main() is started manually in startGame() so the browser can paint the loading status first.
+            noInitialRun: true,
+
             arguments: [
                 "-iwad", "doom1.wad",
                 "-window",
@@ -138,9 +141,16 @@
 
             onRuntimeInitialized: function () {
                 console.log('Runtime initialized successfully');
-                Module.setStatus('');
                 canvasElement.focus();
                 setupRemoteControl();
+                Module.setStatus('Starting Doom...');
+                // Two frames: the first paints the status, the second lets the browser commit it
+                // before the synchronous game init blocks the main thread.
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        setTimeout(startGame, 0);
+                    });
+                });
             },
 
             onAbort: function (what) {
@@ -160,6 +170,15 @@
                 }
             }
         };
+
+        // Blocks during game init. Returns once the SDL main loop is registered, so the
+        // status is hidden on the next frame, after the first game frame has been drawn.
+        function startGame() {
+            Module.callMain(Module.arguments);
+            requestAnimationFrame(function () {
+                Module.setStatus('');
+            });
+        }
 
         window.onerror = function (message, source, lineno, colno, error) {
             console.error('Global error:', message, 'at', source, lineno, colno);
