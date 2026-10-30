@@ -1,0 +1,2 @@
+# Patches are applied with `git apply` inside the Linux build container, so they need LF line endings
+patches/*.patch text eol=lf
