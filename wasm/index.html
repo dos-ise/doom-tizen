@@ -71,16 +71,18 @@
     <script>
         'use strict';
 
-        // Frame counter: rAF calls per second. Stops increasing if the main loop is blocked.
+        // Overlay: browser rAF calls/s (main loop alive) and Doom engine frames/s (I_FinishUpdate).
         (function () {
             const dbgf = document.getElementById('dbgf');
             let frames = 0;
             function countFrame() { frames++; requestAnimationFrame(countFrame); }
             requestAnimationFrame(countFrame);
-            let lastFrames = 0;
+            let lastFrames = 0, lastGame = 0;
             setInterval(function () {
-                dbgf.textContent = 'fps ' + (frames - lastFrames) + ' | frames ' + frames + ' | ' + (performance.now() / 1000).toFixed(1) + 's';
+                const g = (typeof Module !== 'undefined' && Module._doom_get_frames) ? Module._doom_get_frames() : 0;
+                dbgf.textContent = 'raf ' + (frames - lastFrames) + ' | game ' + (g - lastGame) + ' | ' + (performance.now() / 1000).toFixed(1) + 's';
                 lastFrames = frames;
+                lastGame = g;
             }, 1000);
         })();
 

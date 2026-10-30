@@ -1,0 +1,27 @@
+diff --git a/src/i_system.c b/src/i_system.c
+index d4d113b6..cbf9afaf 100644
+--- a/src/i_system.c
++++ b/src/i_system.c
+@@ -259,10 +259,22 @@ void I_BindVariables(void)
+ // I_Quit
+ //
+ 
++#ifdef __EMSCRIPTEN__
++#include <emscripten.h>
++#endif
++
+ void I_Quit (void)
+ {
+     atexit_listentry_t *entry;
+ 
++#ifdef __EMSCRIPTEN__
++    // Close the Tizen app first, so it exits even if a shutdown step hangs.
++    EM_ASM({
++        try { tizen.application.getCurrentApplication().exit(); }
++        catch (e) { try { window.close(); } catch (e2) {} }
++    });
++#endif
++
+     // Run through all exit functions
+  
+     entry = exit_funcs; 

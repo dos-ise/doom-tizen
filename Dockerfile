@@ -63,6 +63,9 @@ RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0001-Fix-OPL-music
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0002-Skip-sound-precache-at-startup-under-Emscripten.patch
 # Skip the "Really quit?" dialog, which needs a remote-control confirm (see patches/)
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0003-Skip-quit-confirmation-under-Emscripten.patch
+# Engine frame counter for the FPS overlay (see patches/)
+RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0004-Count-engine-frames-for-FPS-overlay-under-Emscripten.patch
+RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0005-Close-Tizen-app-on-quit-under-Emscripten.patch
 
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
@@ -73,7 +76,7 @@ ENV EMSCRIPTEN_FLAGS="\
 -s ALLOW_MEMORY_GROWTH=0 \
 -s INITIAL_MEMORY=268435456 \
 -s STACK_SIZE=5242880 \
--s EXPORTED_FUNCTIONS=['_main'] \
+-s EXPORTED_FUNCTIONS=['_main','_doom_get_frames'] \
 -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','callMain','FS','FS_createPreloadedFile'] \
 -s MODULARIZE=0 \
 -s EXPORT_NAME='Module' \
@@ -91,7 +94,7 @@ ENV EMSCRIPTEN_FLAGS="\
 # lowered as well so the module stays within the MVP feature set. Current Emscripten refuses
 # MIN_CHROME_VERSION below 85, so the features are switched off directly instead.
 ENV WASM_COMPAT="-mno-bulk-memory -mno-bulk-memory-opt -mno-sign-ext -mno-nontrapping-fptoint"
-ENV CFLAGS="-O3 -flto $WASM_COMPAT -s USE_SDL_MIXER=2 -DHAVE_DECL_STRCASECMP=1 -DHAVE_DECL_STRNCASECMP=1"
+ENV CFLAGS="-O3 -flto $WASM_COMPAT -s USE_SDL_MIXER=2 -DHAVE_DECL_STRCASECMP=1 -DHAVE_DECL_STRNCASECMP=1 -DHAVE_DIRENT_H=1"
 ENV CXXFLAGS="-O3 -flto $WASM_COMPAT"
 ENV LDFLAGS="$EMSCRIPTEN_FLAGS $WASM_COMPAT -O3 -flto"
 
@@ -99,6 +102,8 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
 		-DEMSCRIPTEN=1 \
+        -DHAVE_DECL_STRCASECMP=1 \
+        -DHAVE_DECL_STRNCASECMP=1 \
         -DENABLE_SDL2_MIXER=ON \
         -DENABLE_SDL2_NET=OFF \
         -DCMAKE_C_FLAGS=\"$CFLAGS\" \

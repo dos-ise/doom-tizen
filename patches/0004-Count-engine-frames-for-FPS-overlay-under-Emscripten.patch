@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Copilot App <223556219+Copilot@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 23:40:00 +0100
+Subject: [PATCH] Count engine frames for the FPS overlay under Emscripten
+
+I_FinishUpdate is called once per rendered frame. Export the count so the
+browser overlay can show the real game frame rate next to the rAF rate.
+---
+ src/i_system.c | 11 +++++++++++
+ src/i_video.c  |  5 +++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/src/i_system.c b/src/i_system.c
+index 1a2b3c4d..5e6f7a8b 100644
+--- a/src/i_system.c
++++ b/src/i_system.c
+@@ -40,6 +40,17 @@
+ #define DEFAULT_RAM 16 /* MiB */
+ #define MIN_RAM     4  /* MiB */
+ 
++#ifdef __EMSCRIPTEN__
++#include <emscripten.h>
++// Engine frame counter: incremented in I_FinishUpdate (i_video.c), read by the
++// FPS overlay in wasm/index.html. Lives here so it exists in every target.
++int doom_frames;
++EMSCRIPTEN_KEEPALIVE int doom_get_frames (void)
++{
++    return doom_frames;
++}
++#endif
++
+ 
+ typedef struct atexit_listentry_s atexit_listentry_t;
+ 
+diff --git a/src/i_video.c b/src/i_video.c
+index 6ff3b80e..a7db4c18 100644
+--- a/src/i_video.c
++++ b/src/i_video.c
+@@ -713,6 +713,11 @@ void I_FinishUpdate (void)
+     if (noblit)
+         return;
+ 
++#ifdef __EMSCRIPTEN__
++    extern int doom_frames;
++    doom_frames++;
++#endif
++
+     if (need_resize)
+     {
+         if (SDL_GetTicks() > last_resize_time + RESIZE_DELAY)
+-- 
+2.43.0
+
