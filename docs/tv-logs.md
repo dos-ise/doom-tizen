@@ -9,16 +9,18 @@ device port is `26101`.
 
 ## 0. Check that the TV is awake
 
-The app only loads when the TV is not in standby. Check the power state before
-starting Doom. The REST API on port `8001` reports it:
+Check the power state before starting Doom. The REST API on port `8001` reports it:
 
 ```powershell
 (Invoke-RestMethod http://<TV-IP>:8001/api/v2/).device.PowerState
 ```
 
-The value must be `on`. If it is `standby`, the TV ignores the app start and the logs
-are incomplete. Ping and `sdb devices` still succeed in standby, so they do not show
-the power state.
+The value is `on` or `standby`. Ping and `sdb devices` still succeed in standby, so
+they do not show the power state.
+
+Test result (2026-10-30): starting Doom via `sdb shell 0 debug` while the TV was in
+standby produced the same complete log as with the TV on. The hypothesis that standby
+causes incomplete logs is not confirmed.
 
 ## 1. Restart Doom in debug mode
 
