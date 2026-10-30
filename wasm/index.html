@@ -46,16 +46,43 @@
             z-index: 100;
             text-shadow: 0 0 10px #0f0;
         }
+
+        /* Frame counter overlay, top right. */
+        #dbgf {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 6px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #0ff;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 200;
+        }
     </style>
 </head>
 <body>
     <canvas id="canvas" tabindex="1"></canvas>
     <div id="status">Loading Doom...</div>
+    <div id="dbgf"></div>
 
     <script src="input.js"></script>
 
     <script>
         'use strict';
+
+        // Frame counter: rAF calls per second. Stops increasing if the main loop is blocked.
+        (function () {
+            const dbgf = document.getElementById('dbgf');
+            let frames = 0;
+            function countFrame() { frames++; requestAnimationFrame(countFrame); }
+            requestAnimationFrame(countFrame);
+            let lastFrames = 0;
+            setInterval(function () {
+                dbgf.textContent = 'fps ' + (frames - lastFrames) + ' | frames ' + frames + ' | ' + (performance.now() / 1000).toFixed(1) + 's';
+                lastFrames = frames;
+            }, 1000);
+        })();
 
         const statusElement = document.getElementById('status');
         const canvasElement = document.getElementById('canvas');

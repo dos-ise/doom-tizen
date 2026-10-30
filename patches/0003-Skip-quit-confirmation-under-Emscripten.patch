@@ -1,0 +1,16 @@
+diff --git a/src/doom/m_menu.c b/src/doom/m_menu.c
+index 71b47cbf..9220cd7b 100644
+--- a/src/doom/m_menu.c
++++ b/src/doom/m_menu.c
+@@ -1130,6 +1130,11 @@ static const char *M_SelectEndMessage(void)
+ 
+ void M_QuitDOOM(int choice)
+ {
++#ifdef __EMSCRIPTEN__
++    // No confirmation dialog on the TV remote; exit goes through onExit in wasm/index.html
++    I_Quit();
++#endif
++
+     DEH_snprintf(endstring, sizeof(endstring), "%s\n\n" DOSY,
+                  DEH_String(M_SelectEndMessage()));
+ 
