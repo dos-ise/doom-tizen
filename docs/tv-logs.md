@@ -19,8 +19,13 @@ The value is `on` or `standby`. Ping and `sdb devices` still succeed in standby,
 they do not show the power state.
 
 Test result (2026-10-30): starting Doom via `sdb shell 0 debug` while the TV was in
-standby produced the same complete log as with the TV on. The hypothesis that standby
-causes incomplete logs is not confirmed.
+standby produced the same complete log as with the TV on. Standby does not cause
+incomplete logs. Missing lines in earlier captures came from the capture itself
+(clipped output), not from the app.
+
+Audio check (2026-10-30, debug build): the negotiated audio format is 44100 Hz stereo
+16-bit, with 2048-byte callbacks. The OPL callback rate measured about 81/s, against
+an expected 86/s, so the audio runs at about 94 % real time.
 
 ## 1. Restart Doom in debug mode
 
