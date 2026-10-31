@@ -234,6 +234,8 @@
             <label>Music volume <input type="range" id="musvol" min="0" max="15" value="8"></label>
             <button id="btn-aspect">4:3 aspect ratio: On</button>
             <small id="aspect-hint" style="display:none">Restart the game to apply the aspect ratio</small>
+            <button id="btn-chex">Chex mode: Off</button>
+            <small id="chex-hint" style="display:none">Restart the game to apply Chex mode</small>
             <button id="btn-log">Console log</button>
             <button id="btn-back">Back</button>
         </div>
@@ -381,6 +383,21 @@
             });
             renderAspect();
 
+            // Chex mode loads chex.wad as a PWAD on top of doom1.wad (see preRun). Applied on restart.
+            const chexBtn = document.getElementById('btn-chex');
+            function getChex() {
+                return localStorage.getItem('doomChexMode') === '1';
+            }
+            function renderChex() {
+                chexBtn.textContent = 'Chex mode: ' + (getChex() ? 'On' : 'Off');
+            }
+            chexBtn.addEventListener('click', function () {
+                localStorage.setItem('doomChexMode', getChex() ? '0' : '1');
+                renderChex();
+                document.getElementById('chex-hint').style.display = '';
+            });
+            renderChex();
+
             function showMain() {
                 logView.style.display = 'none';
                 main.style.display = 'flex';
@@ -496,6 +513,11 @@
                     console.log('preRun: Loading game files...');
                     try {
                         Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
+                        // Chex mode: chex.wad is a PWAD, so it is loaded with -file on top of the doom1.wad IWAD.
+                        if (localStorage.getItem('doomChexMode') === '1') {
+                            Module.FS_createPreloadedFile('/', 'chex.wad', 'chex.wad', true, false);
+                            Module.arguments.push('-file', 'chex.wad');
+                        }
                         Module.FS_createPreloadedFile('/', 'default.cfg', 'default.cfg', true, false);
                         // chocolate-doom.cfg is read synchronously so the saved aspect ratio can be applied.
                         const xhr = new XMLHttpRequest();
