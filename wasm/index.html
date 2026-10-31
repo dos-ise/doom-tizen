@@ -417,7 +417,7 @@
                     });
                 });
             }
-            if (localStorage.getItem('doomChexMode') !== '1') return Promise.resolve();
+            if (!CHEX_MODE) return Promise.resolve();
             return ensureWad('chex.wad').then(function (bytes) {
                 Module.FS.writeFile('/chex.wad', bytes);
                 Module.arguments.push('-file', 'chex.wad');
@@ -608,7 +608,10 @@
         // Read once at load; applied on restart.
         const FREE_MODE = localStorage.getItem('doomFreeMode') === '1';
         const HACX_MODE = localStorage.getItem('doomHacxMode') === '1';
+        const CHEX_MODE = localStorage.getItem('doomChexMode') === '1';
         const IWAD = HACX_MODE ? 'hacx.wad' : FREE_MODE ? 'freedoom1.wad' : 'doom1.wad';
+        // Each mode keeps its own saves (/save-<slot> in MEMFS, savegames-<slot> on the TV).
+        const SAVE_SLOT = HACX_MODE ? 'hacx' : FREE_MODE ? 'free' : CHEX_MODE ? 'chex' : '';
 
         var Module = {
             // main() is started manually in startGame() so the browser can paint the loading status first.
@@ -622,7 +625,7 @@
                 "-extraconfig", "chocolate-doom.cfg",
                 "-width", GAME_WIDTH.toString(),
                 "-height", GAME_HEIGHT.toString(),
-                "-savedir", "/save"
+                "-savedir", '/save' + (SAVE_SLOT ? '-' + SAVE_SLOT : '')
             ],
 
             preRun: [
@@ -640,7 +643,7 @@
                         const aspect = localStorage.getItem('doomAspectRatio') === '1' ? '1' : '0';
                         cfg = cfg.replace(/^aspect_ratio_correct\s+\d+/m, 'aspect_ratio_correct ' + aspect);
                         Module.FS.writeFile('/chocolate-doom.cfg', cfg);
-                        DoomSaves.start(Module.FS);
+                        DoomSaves.start(Module.FS, SAVE_SLOT);
                         console.log('Files loaded successfully');
                     } catch (e) {
                         console.error('Error loading files:', e);
