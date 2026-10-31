@@ -115,29 +115,50 @@
             z-index: 300;
         }
 
+        #settings-main {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            width: 60%;
+        }
+
         #settings h1 {
             margin: 0 0 32px;
             font-size: 48px;
-            color: #fc0;
+            color: #b00;
+            text-align: center;
+            text-transform: uppercase;
         }
 
         #settings label {
             display: flex;
-            align-items: center;
-            gap: 16px;
-            width: 60%;
-            margin-bottom: 20px;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
             font-size: 24px;
+            color: #d00;
         }
 
         #settings label input {
-            flex: 1;
+            width: 100%;
+            accent-color: #b00;
         }
 
         #settings button {
-            margin: 8px;
-            padding: 12px 28px;
+            display: block;
+            width: 100%;
+            margin: 12px 0;
+            padding: 14px 28px;
             font-size: 22px;
+            color: #fff;
+            background: #600;
+            border: 2px solid #b00;
+            cursor: pointer;
+        }
+
+        #settings button:focus {
+            background: #b00;
+            outline: none;
         }
 
         #settings-log {
@@ -146,6 +167,10 @@
             align-items: center;
             width: 90%;
             height: 100%;
+        }
+
+        #settings-log button {
+            width: 50%;
         }
 
         #logtext {
@@ -179,7 +204,7 @@
     <canvas id="canvas" tabindex="1"></canvas>
     <div id="status">Loading Doom...</div>
     <div id="dbgf"></div>
-    <input id="textinput" type="text" autocomplete="off" autocapitalize="characters">
+    <form id="textform" action="javascript:void(0)"><input id="textinput" type="text" autocomplete="off" autocapitalize="characters"></form>
     <div id="support">
         <img src="paypal-qr.svg" alt="PayPal QR-Code">
         <p>Support the development on PayPal</p>
@@ -254,6 +279,14 @@
             };
             // "Fertig" on the TV keyboard only closes it (blur); confirm the save name with Enter.
             textInput.addEventListener('blur', function () {
+                if (!textActive) return;
+                textActive = false;
+                post(KEY_ENTER);
+                document.getElementById('canvas').focus();
+            });
+            // The TV IME's "Fertig" submits the form (keyCode 229 keydown, no blur), so catch submit too.
+            document.getElementById('textform').addEventListener('submit', function (e) {
+                e.preventDefault();
                 if (!textActive) return;
                 textActive = false;
                 post(KEY_ENTER);
