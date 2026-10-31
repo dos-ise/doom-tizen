@@ -184,7 +184,6 @@ jobs:
           - New HTML Options panel: music and sound volume, aspect ratio toggle, console log, remote navigation
           - PayPal QR code overlay in "Read This!" for supporting the project
           - Fixed canvas stretching so the game fits the TV screen correctly
-          - Debug logging for save/input issues (`[save-dbg]` console output)
           - Performance: low internal render resolution, fixed key bindings, new TV controls
           - Tizen 5.5 (Chromium 69) compatibility
           - Updated chocolate-doom submodule"
