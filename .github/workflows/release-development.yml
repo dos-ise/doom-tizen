@@ -178,6 +178,13 @@ jobs:
 
           ## What's Changed:
 
+          - Save games on the TV: on-screen keyboard for save names; the remote's "Fertig" (Done) key now confirms the name and saves
+          - Save name input: remote Back cancels input cleanly, OK/Enter works in the text field
+          - Widescreen is now the default aspect ratio; 4:3 can be selected in Options (restart the game to apply)
+          - New HTML Options panel: music and sound volume, aspect ratio toggle, console log, remote navigation
+          - PayPal QR code overlay in "Read This!" for supporting the project
+          - Fixed canvas stretching so the game fits the TV screen correctly
+          - Debug logging for save/input issues (`[save-dbg]` console output)
           - Performance: low internal render resolution, fixed key bindings, new TV controls
           - Tizen 5.5 (Chromium 69) compatibility
           - Updated chocolate-doom submodule"
