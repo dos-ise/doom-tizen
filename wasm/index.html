@@ -234,12 +234,9 @@
             <label>Music volume <input type="range" id="musvol" min="0" max="15" value="8"></label>
             <button id="btn-aspect">4:3 aspect ratio: On</button>
             <small id="aspect-hint" style="display:none">Restart the game to apply the aspect ratio</small>
-            <button id="btn-chex">Chex mode: Off</button>
-            <small id="chex-hint" style="display:none">Restart the game to apply Chex mode</small>
-            <button id="btn-free">Free mode: Off</button>
-            <small id="free-hint" style="display:none">Restart the game to apply Free mode</small>
-            <button id="btn-hacx">HacX mode: Off</button>
-            <small id="hacx-hint" style="display:none">Restart the game to apply HacX mode</small>
+            <small>Game mode (selecting one restarts the game)</small>
+            <div id="mode-list"></div>
+            <small id="mode-hint" style="display:none"></small>
             <button id="btn-log">Console log</button>
             <button id="btn-back">Back</button>
         </div>
@@ -461,54 +458,67 @@
             });
             renderAspect();
 
-            // Chex, Free and HacX modes are mutually exclusive: Free needs freedoom1.wad as IWAD, HacX needs hacx.wad as IWAD,
-            // Chex needs doom1.wad. Each mode downloads its WAD from wads/ in this repo on first enable. Changes apply on restart.
+            // One selection for the mode. Chex, Free and HacX are mutually exclusive; Standard turns them all off.
+            // Free needs freedoom1.wad as IWAD, HacX needs hacx.wad as IWAD, Chex needs doom1.wad.
+            // Each mode downloads its WAD from wads/ in this repo on first select, then the page reloads with that mode.
             const modes = {
-                chex: { key: 'doomChexMode', btn: document.getElementById('btn-chex'), hint: document.getElementById('chex-hint'), label: 'Chex mode', wad: 'chex.wad' },
-                free: { key: 'doomFreeMode', btn: document.getElementById('btn-free'), hint: document.getElementById('free-hint'), label: 'Free mode', wad: 'freedoom1.wad' },
-                hacx: { key: 'doomHacxMode', btn: document.getElementById('btn-hacx'), hint: document.getElementById('hacx-hint'), label: 'HacX mode', wad: 'hacx.wad' }
+                standard: { key: null, label: 'Standard' },
+                chex: { key: 'doomChexMode', label: 'Chex', wad: 'chex.wad' },
+                free: { key: 'doomFreeMode', label: 'Free', wad: 'freedoom1.wad' },
+                hacx: { key: 'doomHacxMode', label: 'HacX', wad: 'hacx.wad' }
             };
-            function isOn(mode) {
-                return localStorage.getItem(mode.key) === '1';
+            const modeOrder = ['standard', 'chex', 'free', 'hacx'];
+            const modeList = document.getElementById('mode-list');
+            const modeHint = document.getElementById('mode-hint');
+            let modeBusy = false;
+            function activeMode() {
+                const found = Object.keys(modes).find(function (name) {
+                    return modes[name].key && localStorage.getItem(modes[name].key) === '1';
+                });
+                return found || 'standard';
             }
-            function render(mode) {
-                mode.btn.textContent = mode.label + ': ' + (isOn(mode) ? 'On' : 'Off');
-            }
-            function showHint(mode, text) {
-                mode.hint.textContent = text;
-                mode.hint.style.display = '';
-            }
-            function toggleMode(mode) {
-                if (isOn(mode)) {
-                    localStorage.setItem(mode.key, '0');
-                    render(mode);
-                    showHint(mode, 'Restart the game to apply ' + mode.label);
-                    return;
-                }
-                mode.btn.disabled = true;
-                showHint(mode, 'Downloading ' + mode.wad + '...');
-                ensureWad(mode.wad).then(function () {
-                    Object.keys(modes).forEach(function (name) {
-                        var other = modes[name];
-                        if (other === mode) return;
-                        localStorage.setItem(other.key, '0');
-                        render(other);
-                        other.hint.style.display = 'none';
-                    });
-                    localStorage.setItem(mode.key, '1');
-                    showHint(mode, 'Restart the game to apply ' + mode.label);
-                }).catch(function (e) {
-                    console.error(e);
-                    showHint(mode, 'Download failed: ' + e.message);
-                }).then(function () {
-                    mode.btn.disabled = false;
-                    render(mode);
+            // The mode the engine loaded with. Selecting another mode reloads the page, so this label stays accurate.
+            const runningMode = activeMode();
+            function renderModes() {
+                modeList.innerHTML = '';
+                modeOrder.forEach(function (name) {
+                    const btn = document.createElement('button');
+                    const selected = name === activeMode();
+                    btn.setAttribute('role', 'radio');
+                    btn.setAttribute('aria-checked', String(selected));
+                    btn.textContent = (selected ? '[*] ' : '[ ] ') + modes[name].label + (name === runningMode ? '  (running)' : '');
+                    btn.addEventListener('click', function () { selectMode(name); });
+                    modeList.appendChild(btn);
                 });
             }
-            Object.keys(modes).forEach(function (name) {
-                modes[name].btn.addEventListener('click', function () { toggleMode(modes[name]); });
-                render(modes[name]);
-            });
+            function showModeHint(text) {
+                modeHint.textContent = text;
+                modeHint.style.display = '';
+            }
+            function selectMode(name) {
+                if (modeBusy || name === activeMode()) return;
+                const mode = modes[name];
+                if (!mode.key) {
+                    Object.keys(modes).forEach(function (other) {
+                        if (modes[other].key) localStorage.setItem(modes[other].key, '0');
+                    });
+                    location.reload();
+                    return;
+                }
+                modeBusy = true;
+                showModeHint('Downloading ' + mode.wad + '...');
+                ensureWad(mode.wad).then(function () {
+                    Object.keys(modes).forEach(function (other) {
+                        if (modes[other].key) localStorage.setItem(modes[other].key, other === name ? '1' : '0');
+                    });
+                    location.reload();
+                }).catch(function (e) {
+                    console.error(e);
+                    modeBusy = false;
+                    showModeHint('Download failed: ' + e.message);
+                });
+            }
+            renderModes();
 
             function showMain() {
                 logView.style.display = 'none';
