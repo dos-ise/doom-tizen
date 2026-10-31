@@ -1,0 +1,63 @@
+From e37373ce2430e63dded212d27274b550733b83eb Mon Sep 17 00:00:00 2001
+From: Dennis <ostermann3k@googlemail.com>
+Date: Sat, 31 Oct 2026 09:18:33 +0100
+Subject: [PATCH] Show support QR code instead of help pages under Emscripten
+
+Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>
+---
+ src/doom/m_menu.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/src/doom/m_menu.c b/src/doom/m_menu.c
+index 9220cd7b..76e98184 100644
+--- a/src/doom/m_menu.c
++++ b/src/doom/m_menu.c
+@@ -21,6 +21,10 @@
+ #include <stdlib.h>
+ #include <ctype.h>
+ 
++#ifdef __EMSCRIPTEN__
++#include <emscripten.h>
++#endif
++
+ 
+ #include "doomdef.h"
+ #include "doomkeys.h"
+@@ -1041,16 +1045,34 @@ void M_EndGame(int choice)
+ //
+ // M_ReadThis
+ //
++#ifdef __EMSCRIPTEN__
++// "Read This!" shows a support QR code (index.html overlay) instead of the help pages.
++static void M_ShowSupportQR(void)
++{
++    EM_ASM({
++        if (typeof doomShowSupportQR === 'function') doomShowSupportQR();
++    });
++}
++#endif
++
+ void M_ReadThis(int choice)
+ {
+     choice = 0;
++#ifdef __EMSCRIPTEN__
++    M_ShowSupportQR();
++#else
+     M_SetupNextMenu(&ReadDef1);
++#endif
+ }
+ 
+ void M_ReadThis2(int choice)
+ {
+     choice = 0;
++#ifdef __EMSCRIPTEN__
++    M_ShowSupportQR();
++#else
+     M_SetupNextMenu(&ReadDef2);
++#endif
+ }
+ 
+ void M_FinishReadThis(int choice)
+-- 
+2.56.0.windows.4
+

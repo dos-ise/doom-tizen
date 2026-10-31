@@ -68,6 +68,8 @@ RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0004-Count-engine-
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0005-Close-Tizen-app-on-quit-under-Emscripten.patch
 # On-screen keyboard for save-game names (see patches/)
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0006-Use-TV-on-screen-keyboard-for-text-input-under-Emscripten.patch
+# Support QR code instead of "Read This!" help pages (see patches/)
+RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0007-Show-support-QR-code-instead-of-help-under-Emscripten.patch
 
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom

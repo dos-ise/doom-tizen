@@ -9,6 +9,7 @@ install(DIRECTORY wasm/ DESTINATION widget
     PATTERN "*.html"
     PATTERN "*.cfg"
     PATTERN "*.wad"
+    PATTERN "*.svg"
     PATTERN "static/*"
     PATTERN "platform/*"
 )

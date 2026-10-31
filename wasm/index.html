@@ -60,6 +60,42 @@
             z-index: 200;
         }
 
+        /* Support overlay (patch 0007): shown instead of the help pages, closes on the next key or click. */
+        #support {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.92);
+            color: #fff;
+            text-align: center;
+            z-index: 300;
+        }
+
+        #support img {
+            width: 60vmin;
+            height: 60vmin;
+            background: #fff;
+            image-rendering: pixelated;
+        }
+
+        #support p {
+            margin-top: 24px;
+            font-size: 22px;
+        }
+
+        #support small {
+            display: block;
+            margin-top: 12px;
+            color: #aaa;
+            font-size: 16px;
+        }
+
         /* Hidden text field: focusing it makes the TV show its on-screen keyboard (save-game names). */
         #textinput {
             position: absolute;
@@ -78,6 +114,12 @@
     <div id="status">Loading Doom...</div>
     <div id="dbgf"></div>
     <input id="textinput" type="text" autocomplete="off" autocapitalize="characters">
+    <div id="support">
+        <img src="paypal-qr.svg" alt="PayPal QR-Code">
+        <p>Support the development on PayPal</p>
+        <small>paypal.me/DennisOstermann</small>
+        <small>Press any key to close</small>
+    </div>
 
     <script src="input.js"></script>
 
@@ -110,17 +152,28 @@
                 if (typeof Module !== 'undefined' && Module._doom_post_key) Module._doom_post_key(key);
             }
 
+            let textActive = false;
             window.doomTextInputStart = function () {
                 textInput.value = '';
+                textActive = true;
                 textInput.focus();
             };
             window.doomTextInputStop = function () {
+                textActive = false;
                 textInput.blur();
             };
+            // "Fertig" on the TV keyboard only closes it (blur); confirm the save name with Enter.
+            textInput.addEventListener('blur', function () {
+                if (!textActive) return;
+                textActive = false;
+                post(KEY_ENTER);
+                document.getElementById('canvas').focus();
+            });
             textInput.addEventListener('keydown', function (e) {
-                if (special[e.key] !== undefined) {
+                const key = special[e.key] !== undefined ? special[e.key] : (e.keyCode === 13 ? KEY_ENTER : undefined);
+                if (key !== undefined) {
                     e.preventDefault();
-                    post(special[e.key]);
+                    post(key);
                 }
             });
             textInput.addEventListener('input', function () {
@@ -130,6 +183,26 @@
                     post(ch.charCodeAt(0));
                 }
             });
+        })();
+
+        // Called by patch 0007 from the Read This! menu entry. Closes on the next key or click
+        // and swallows that event so it does not also reach the game menu.
+        (function () {
+            const support = document.getElementById('support');
+            function close(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                support.style.display = 'none';
+                window.removeEventListener('keydown', close, true);
+                window.removeEventListener('mousedown', close, true);
+                window.removeEventListener('touchstart', close, true);
+            }
+            window.doomShowSupportQR = function () {
+                support.style.display = 'flex';
+                window.addEventListener('keydown', close, true);
+                window.addEventListener('mousedown', close, true);
+                window.addEventListener('touchstart', close, true);
+            };
         })();
 
         const statusElement = document.getElementById('status');
