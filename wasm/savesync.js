@@ -4,10 +4,10 @@
 (function () {
     'use strict';
 
-    const SAVE_DIR_FS = '/save';
-    const SAVE_DIR_NAME = 'savegames';
     const POLL_MS = 3000;
 
+    let SAVE_DIR_FS = '/save';
+    let SAVE_DIR_NAME = 'savegames';
     let fs = null;
     let saveDir = null;
     const known = {};
@@ -92,8 +92,15 @@
     }
 
     const DoomSaves = {
-        start: function (FS) {
+        // slot is '' for the regular game, otherwise a per-mode suffix (chex, free, hacx).
+        saveDirFor: function (slot) {
+            return '/save' + (slot ? '-' + slot : '');
+        },
+
+        start: function (FS, slot) {
             fs = FS;
+            SAVE_DIR_FS = this.saveDirFor(slot);
+            SAVE_DIR_NAME = 'savegames' + (slot ? '-' + slot : '');
             fs.mkdirTree(SAVE_DIR_FS);
 
             if (typeof tizen === 'undefined' || !tizen.filesystem) {

@@ -234,6 +234,9 @@
             <label>Music volume <input type="range" id="musvol" min="0" max="15" value="8"></label>
             <button id="btn-aspect">4:3 aspect ratio: On</button>
             <small id="aspect-hint" style="display:none">Restart the game to apply the aspect ratio</small>
+            <small>Game mode (selecting one restarts the game)</small>
+            <div id="mode-list"></div>
+            <small id="mode-hint" style="display:none"></small>
             <button id="btn-log">Console log</button>
             <button id="btn-back">Back</button>
         </div>
@@ -347,6 +350,80 @@
             };
         })();
 
+        // Chex and Free mode WADs are downloaded once from the repo's wads/ folder and cached in IndexedDB.
+        const WADS_BASE_URL = 'https://raw.githubusercontent.com/dos-ise/doom-tizen/main/wads/';
+
+        function requestToPromise(req) {
+            return new Promise(function (resolve, reject) {
+                req.onsuccess = function () { resolve(req.result); };
+                req.onerror = function () { reject(req.error); };
+            });
+        }
+
+        function openWadDb() {
+            const req = indexedDB.open('doom-wads', 1);
+            req.onupgradeneeded = function () { req.result.createObjectStore('wads'); };
+            return requestToPromise(req);
+        }
+
+        // Returns the named WAD's bytes from IndexedDB, downloading and caching them from wads/ on first use.
+        async function ensureWad(name) {
+            const db = await openWadDb();
+            const store = db.transaction('wads', 'readonly').objectStore('wads');
+            let data = await requestToPromise(store.get(name));
+            if (!data) {
+                const res = await fetch(WADS_BASE_URL + name);
+                if (!res.ok) throw new Error(name + ' download failed: HTTP ' + res.status);
+                data = await res.arrayBuffer();
+                const bytes = new Uint8Array(data);
+                if (String.fromCharCode.apply(null, bytes.subarray(0, 4)) !== 'PWAD' &&
+                    String.fromCharCode.apply(null, bytes.subarray(0, 4)) !== 'IWAD') {
+                    throw new Error('downloaded ' + name + ' is not a valid WAD');
+                }
+                const writeStore = db.transaction('wads', 'readwrite').objectStore('wads');
+                await requestToPromise(writeStore.put(data, name));
+            }
+            db.close();
+            return new Uint8Array(data);
+        }
+
+        // Runs before the engine starts. Free mode writes freedoom1.wad as the IWAD; HacX mode writes hacx.wad as the IWAD;
+        // Chex mode adds chex.wad as a PWAD. If a download fails, the game falls back to doom1.wad (Free/HacX) or the regular game (Chex).
+        function prepareWads() {
+            if (HACX_MODE) {
+                return ensureWad('hacx.wad').then(function (bytes) {
+                    Module.FS.writeFile('/hacx.wad', bytes);
+                }).catch(function (e) {
+                    console.error('HacX mode disabled for this start:', e);
+                    Module.setStatus('HacX mode unavailable, starting Doom');
+                    Module.arguments[Module.arguments.indexOf('-iwad') + 1] = 'doom1.wad';
+                    return fetch('doom1.wad').then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+                        Module.FS.writeFile('/doom1.wad', new Uint8Array(buf));
+                    });
+                });
+            }
+            if (FREE_MODE) {
+                return ensureWad('freedoom1.wad').then(function (bytes) {
+                    Module.FS.writeFile('/freedoom1.wad', bytes);
+                }).catch(function (e) {
+                    console.error('Free mode disabled for this start:', e);
+                    Module.setStatus('Free mode unavailable, starting Doom');
+                    Module.arguments[Module.arguments.indexOf('-iwad') + 1] = 'doom1.wad';
+                    return fetch('doom1.wad').then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+                        Module.FS.writeFile('/doom1.wad', new Uint8Array(buf));
+                    });
+                });
+            }
+            if (!CHEX_MODE) return Promise.resolve();
+            return ensureWad('chex.wad').then(function (bytes) {
+                Module.FS.writeFile('/chex.wad', bytes);
+                Module.arguments.push('-file', 'chex.wad');
+            }).catch(function (e) {
+                console.error('Chex mode disabled for this start:', e);
+                Module.setStatus('Chex mode unavailable, starting Doom');
+            });
+        }
+
         // Options panel (patch 0008): called by M_Options. Sliders set the engine volume directly;
         // "Console log" shows the captured console output in a scrollable view.
         (function () {
@@ -380,6 +457,68 @@
                 document.getElementById('aspect-hint').style.display = '';
             });
             renderAspect();
+
+            // One selection for the mode. Chex, Free and HacX are mutually exclusive; Standard turns them all off.
+            // Free needs freedoom1.wad as IWAD, HacX needs hacx.wad as IWAD, Chex needs doom1.wad.
+            // Each mode downloads its WAD from wads/ in this repo on first select, then the page reloads with that mode.
+            const modes = {
+                standard: { key: null, label: 'Standard' },
+                chex: { key: 'doomChexMode', label: 'Chex', wad: 'chex.wad' },
+                free: { key: 'doomFreeMode', label: 'Free', wad: 'freedoom1.wad' },
+                hacx: { key: 'doomHacxMode', label: 'HacX', wad: 'hacx.wad' }
+            };
+            const modeOrder = ['standard', 'chex', 'free', 'hacx'];
+            const modeList = document.getElementById('mode-list');
+            const modeHint = document.getElementById('mode-hint');
+            let modeBusy = false;
+            function activeMode() {
+                const found = Object.keys(modes).find(function (name) {
+                    return modes[name].key && localStorage.getItem(modes[name].key) === '1';
+                });
+                return found || 'standard';
+            }
+            // The mode the engine loaded with. Selecting another mode reloads the page, so this label stays accurate.
+            const runningMode = activeMode();
+            function renderModes() {
+                modeList.innerHTML = '';
+                modeOrder.forEach(function (name) {
+                    const btn = document.createElement('button');
+                    const selected = name === activeMode();
+                    btn.setAttribute('role', 'radio');
+                    btn.setAttribute('aria-checked', String(selected));
+                    btn.textContent = (selected ? '[*] ' : '[ ] ') + modes[name].label + (name === runningMode ? '  (running)' : '');
+                    btn.addEventListener('click', function () { selectMode(name); });
+                    modeList.appendChild(btn);
+                });
+            }
+            function showModeHint(text) {
+                modeHint.textContent = text;
+                modeHint.style.display = '';
+            }
+            function selectMode(name) {
+                if (modeBusy || name === activeMode()) return;
+                const mode = modes[name];
+                if (!mode.key) {
+                    Object.keys(modes).forEach(function (other) {
+                        if (modes[other].key) localStorage.setItem(modes[other].key, '0');
+                    });
+                    location.reload();
+                    return;
+                }
+                modeBusy = true;
+                showModeHint('Downloading ' + mode.wad + '...');
+                ensureWad(mode.wad).then(function () {
+                    Object.keys(modes).forEach(function (other) {
+                        if (modes[other].key) localStorage.setItem(modes[other].key, other === name ? '1' : '0');
+                    });
+                    location.reload();
+                }).catch(function (e) {
+                    console.error(e);
+                    modeBusy = false;
+                    showModeHint('Download failed: ' + e.message);
+                });
+            }
+            renderModes();
 
             function showMain() {
                 logView.style.display = 'none';
@@ -475,27 +614,35 @@
         // Lower to 640x400 on very weak TVs if 960x540 is still too slow.
         const GAME_WIDTH = 960;
         const GAME_HEIGHT = 540;
+        // Free mode uses freedoom1.wad and HacX mode uses hacx.wad (both downloaded from wads/ on enable) as the IWAD.
+        // Read once at load; applied on restart.
+        const FREE_MODE = localStorage.getItem('doomFreeMode') === '1';
+        const HACX_MODE = localStorage.getItem('doomHacxMode') === '1';
+        const CHEX_MODE = localStorage.getItem('doomChexMode') === '1';
+        const IWAD = HACX_MODE ? 'hacx.wad' : FREE_MODE ? 'freedoom1.wad' : 'doom1.wad';
+        // Each mode keeps its own saves (/save-<slot> in MEMFS, savegames-<slot> on the TV).
+        const SAVE_SLOT = HACX_MODE ? 'hacx' : FREE_MODE ? 'free' : CHEX_MODE ? 'chex' : '';
 
         var Module = {
             // main() is started manually in startGame() so the browser can paint the loading status first.
             noInitialRun: true,
 
             arguments: [
-                "-iwad", "doom1.wad",
+                "-iwad", IWAD,
                 "-window",
                 "-nogui",
                 "-config", "default.cfg",
                 "-extraconfig", "chocolate-doom.cfg",
                 "-width", GAME_WIDTH.toString(),
                 "-height", GAME_HEIGHT.toString(),
-                "-savedir", "/save"
+                "-savedir", '/save' + (SAVE_SLOT ? '-' + SAVE_SLOT : '')
             ],
 
             preRun: [
                 function () {
                     console.log('preRun: Loading game files...');
                     try {
-                        Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
+                        if (!FREE_MODE && !HACX_MODE) Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
                         Module.FS_createPreloadedFile('/', 'default.cfg', 'default.cfg', true, false);
                         // chocolate-doom.cfg is read synchronously so the saved aspect ratio can be applied.
                         const xhr = new XMLHttpRequest();
@@ -506,7 +653,7 @@
                         const aspect = localStorage.getItem('doomAspectRatio') === '1' ? '1' : '0';
                         cfg = cfg.replace(/^aspect_ratio_correct\s+\d+/m, 'aspect_ratio_correct ' + aspect);
                         Module.FS.writeFile('/chocolate-doom.cfg', cfg);
-                        DoomSaves.start(Module.FS);
+                        DoomSaves.start(Module.FS, SAVE_SLOT);
                         console.log('Files loaded successfully');
                     } catch (e) {
                         console.error('Error loading files:', e);
@@ -568,7 +715,9 @@
                 // before the synchronous game init blocks the main thread.
                 requestAnimationFrame(function () {
                     requestAnimationFrame(function () {
-                        setTimeout(startGame, 0);
+                        setTimeout(function () {
+                    prepareWads().then(startGame);
+                }, 0);
                     });
                 });
             },
