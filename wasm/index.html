@@ -447,6 +447,26 @@
         const statusElement = document.getElementById('status');
         const canvasElement = document.getElementById('canvas');
 
+        // Fit the canvas box to its own pixel aspect. The TV keyboard resizes the
+        // window, which can change the canvas pixel size; a fixed 100%x100% box
+        // would then stretch the picture instead of keeping the letterbox.
+        let lastFit = '';
+        function fitCanvas() {
+            const cw = canvasElement.width, ch = canvasElement.height;
+            if (!cw || !ch) return;
+            const key = cw + 'x' + ch + '@' + window.innerWidth + 'x' + window.innerHeight;
+            if (key === lastFit) return;
+            lastFit = key;
+            const s = Math.min(window.innerWidth / cw, window.innerHeight / ch);
+            const w = Math.round(cw * s), h = Math.round(ch * s);
+            canvasElement.style.width = w + 'px';
+            canvasElement.style.height = h + 'px';
+            canvasElement.style.left = Math.round((window.innerWidth - w) / 2) + 'px';
+            canvasElement.style.top = Math.round((window.innerHeight - h) / 2) + 'px';
+        }
+        window.addEventListener('resize', fitCanvas);
+        setInterval(fitCanvas, 300);
+
         // Internal render resolution. The software renderer is the bottleneck,
         // so we render at a low resolution and let CSS upscale to full screen.
         // Lower to 640x400 on very weak TVs if 960x540 is still too slow.
