@@ -178,6 +178,9 @@ jobs:
 
           ## What's Changed:
 
+          - Game modes in Options: Standard, Chex, Free (freedoom1) and HacX, selected from a vertical list with D-pad (Up/Down to choose, OK to select)
+          - Chex, Free and HacX WADs are downloaded on first select and cached on the TV; they are mutually exclusive with each other
+          - Separate save games per game mode
           - Save games on the TV: on-screen keyboard for save names; the remote's Done key now confirms the name and saves
           - Save name input: remote Back cancels input cleanly, OK/Enter works in the text field
           - Widescreen is now the default aspect ratio; 4:3 can be selected in Options (restart the game to apply)
