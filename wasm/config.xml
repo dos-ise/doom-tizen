@@ -2,7 +2,7 @@
 <widget xmlns:tizen="http://tizen.org/ns/widgets"
         xmlns="http://www.w3.org/ns/widgets"
         id="http://samsung.tv/DoomWasm"
-        version="1.10.2"
+        version="1.13.0"
         viewmodes="fullscreen">
 
     <access origin="*"/>
