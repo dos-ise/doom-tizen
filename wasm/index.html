@@ -349,6 +349,55 @@
             };
         })();
 
+        // Chex mode: chex.wad is downloaded once from CHEX_WAD_URL and cached in IndexedDB.
+        const CHEX_WAD_URL = 'https://raw.githubusercontent.com/Akbar30Bill/DOOM_wads/master/chex.wad';
+
+        function requestToPromise(req) {
+            return new Promise(function (resolve, reject) {
+                req.onsuccess = function () { resolve(req.result); };
+                req.onerror = function () { reject(req.error); };
+            });
+        }
+
+        function openWadDb() {
+            const req = indexedDB.open('doom-wads', 1);
+            req.onupgradeneeded = function () { req.result.createObjectStore('wads'); };
+            return requestToPromise(req);
+        }
+
+        // Returns the chex.wad bytes, downloading and caching them on first use.
+        async function ensureChexWad() {
+            const db = await openWadDb();
+            const store = db.transaction('wads', 'readonly').objectStore('wads');
+            let data = await requestToPromise(store.get('chex.wad'));
+            if (!data) {
+                const res = await fetch(CHEX_WAD_URL);
+                if (!res.ok) throw new Error('chex.wad download failed: HTTP ' + res.status);
+                data = await res.arrayBuffer();
+                const bytes = new Uint8Array(data);
+                if (String.fromCharCode.apply(null, bytes.subarray(0, 4)) !== 'PWAD') {
+                    throw new Error('downloaded chex.wad is not a valid WAD');
+                }
+                const writeStore = db.transaction('wads', 'readwrite').objectStore('wads');
+                await requestToPromise(writeStore.put(data, 'chex.wad'));
+            }
+            db.close();
+            return new Uint8Array(data);
+        }
+
+        // Runs before the engine starts: writes chex.wad into the virtual FS and adds -file.
+        // Falls back to the regular game if the file is unavailable.
+        function prepareChexWad() {
+            if (localStorage.getItem('doomChexMode') !== '1') return Promise.resolve();
+            return ensureChexWad().then(function (bytes) {
+                Module.FS.writeFile('/chex.wad', bytes);
+                Module.arguments.push('-file', 'chex.wad');
+            }).catch(function (e) {
+                console.error('Chex mode disabled for this start:', e);
+                Module.setStatus('Chex mode unavailable, starting Doom');
+            });
+        }
+
         // Options panel (patch 0008): called by M_Options. Sliders set the engine volume directly;
         // "Console log" shows the captured console output in a scrollable view.
         (function () {
@@ -385,16 +434,35 @@
 
             // Chex mode loads chex.wad as a PWAD on top of doom1.wad (see preRun). Applied on restart.
             const chexBtn = document.getElementById('btn-chex');
+            const chexHint = document.getElementById('chex-hint');
             function getChex() {
                 return localStorage.getItem('doomChexMode') === '1';
             }
             function renderChex() {
                 chexBtn.textContent = 'Chex mode: ' + (getChex() ? 'On' : 'Off');
             }
+            // Switching on downloads chex.wad (once, cached in IndexedDB); it stays Off if that fails.
             chexBtn.addEventListener('click', function () {
-                localStorage.setItem('doomChexMode', getChex() ? '0' : '1');
-                renderChex();
-                document.getElementById('chex-hint').style.display = '';
+                if (getChex()) {
+                    localStorage.setItem('doomChexMode', '0');
+                    renderChex();
+                    chexHint.textContent = 'Restart the game to apply Chex mode';
+                    chexHint.style.display = '';
+                    return;
+                }
+                chexBtn.disabled = true;
+                chexHint.textContent = 'Downloading chex.wad...';
+                chexHint.style.display = '';
+                ensureChexWad().then(function () {
+                    localStorage.setItem('doomChexMode', '1');
+                    chexHint.textContent = 'Restart the game to apply Chex mode';
+                }).catch(function (e) {
+                    console.error(e);
+                    chexHint.textContent = 'Download failed: ' + e.message;
+                }).then(function () {
+                    chexBtn.disabled = false;
+                    renderChex();
+                });
             });
             renderChex();
 
@@ -513,11 +581,6 @@
                     console.log('preRun: Loading game files...');
                     try {
                         Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
-                        // Chex mode: chex.wad is a PWAD, so it is loaded with -file on top of the doom1.wad IWAD.
-                        if (localStorage.getItem('doomChexMode') === '1') {
-                            Module.FS_createPreloadedFile('/', 'chex.wad', 'chex.wad', true, false);
-                            Module.arguments.push('-file', 'chex.wad');
-                        }
                         Module.FS_createPreloadedFile('/', 'default.cfg', 'default.cfg', true, false);
                         // chocolate-doom.cfg is read synchronously so the saved aspect ratio can be applied.
                         const xhr = new XMLHttpRequest();
@@ -590,7 +653,9 @@
                 // before the synchronous game init blocks the main thread.
                 requestAnimationFrame(function () {
                     requestAnimationFrame(function () {
-                        setTimeout(startGame, 0);
+                        setTimeout(function () {
+                    prepareChexWad().then(startGame);
+                }, 0);
                     });
                 });
             },
