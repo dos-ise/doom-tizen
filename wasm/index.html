@@ -59,12 +59,25 @@
             pointer-events: none;
             z-index: 200;
         }
+
+        /* Hidden text field: focusing it makes the TV show its on-screen keyboard (save-game names). */
+        #textinput {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            border: 0;
+            padding: 0;
+        }
     </style>
 </head>
 <body>
     <canvas id="canvas" tabindex="1"></canvas>
     <div id="status">Loading Doom...</div>
     <div id="dbgf"></div>
+    <input id="textinput" type="text" autocomplete="off" autocapitalize="characters">
 
     <script src="input.js"></script>
 
@@ -84,6 +97,39 @@
                 lastFrames = frames;
                 lastGame = g;
             }, 1000);
+        })();
+
+        // Text input bridge for Chocolate Doom (patch 0006): I_StartTextInput/I_StopTextInput
+        // call these, and keys typed on the TV keyboard are sent back to the engine.
+        (function () {
+            const textInput = document.getElementById('textinput');
+            const KEY_ENTER = 13, KEY_ESCAPE = 27, KEY_BACKSPACE = 0x7f;
+            const special = { Enter: KEY_ENTER, Escape: KEY_ESCAPE, Backspace: KEY_BACKSPACE };
+
+            function post(key) {
+                if (typeof Module !== 'undefined' && Module._doom_post_key) Module._doom_post_key(key);
+            }
+
+            window.doomTextInputStart = function () {
+                textInput.value = '';
+                textInput.focus();
+            };
+            window.doomTextInputStop = function () {
+                textInput.blur();
+            };
+            textInput.addEventListener('keydown', function (e) {
+                if (special[e.key] !== undefined) {
+                    e.preventDefault();
+                    post(special[e.key]);
+                }
+            });
+            textInput.addEventListener('input', function () {
+                const text = textInput.value;
+                textInput.value = '';
+                for (const ch of text) {
+                    post(ch.charCodeAt(0));
+                }
+            });
         })();
 
         const statusElement = document.getElementById('status');

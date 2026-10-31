@@ -66,6 +66,8 @@ RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0003-Skip-quit-con
 # Engine frame counter for the FPS overlay (see patches/)
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0004-Count-engine-frames-for-FPS-overlay-under-Emscripten.patch
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0005-Close-Tizen-app-on-quit-under-Emscripten.patch
+# On-screen keyboard for save-game names (see patches/)
+RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0006-Use-TV-on-screen-keyboard-for-text-input-under-Emscripten.patch
 
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
@@ -76,7 +78,7 @@ ENV EMSCRIPTEN_FLAGS="\
 -s ALLOW_MEMORY_GROWTH=0 \
 -s INITIAL_MEMORY=268435456 \
 -s STACK_SIZE=5242880 \
--s EXPORTED_FUNCTIONS=['_main','_doom_get_frames'] \
+-s EXPORTED_FUNCTIONS=['_main','_doom_get_frames','_doom_post_key'] \
 -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','callMain','FS','FS_createPreloadedFile'] \
 -s MODULARIZE=0 \
 -s EXPORT_NAME='Module' \
