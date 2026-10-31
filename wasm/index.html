@@ -232,6 +232,8 @@
             <h1>Options</h1>
             <label>Sound effects volume <input type="range" id="sfxvol" min="0" max="15" value="8"></label>
             <label>Music volume <input type="range" id="musvol" min="0" max="15" value="8"></label>
+            <button id="btn-aspect">4:3 aspect ratio: On</button>
+            <small>Restart the game to apply the aspect ratio</small>
             <button id="btn-log">Console log</button>
             <button id="btn-back">Back</button>
         </div>
@@ -362,6 +364,20 @@
             sfx.addEventListener('input', setVolume);
             music.addEventListener('input', setVolume);
 
+            // Stored in localStorage and written into chocolate-doom.cfg before the next start (see preRun).
+            const aspectBtn = document.getElementById('btn-aspect');
+            function renderAspect() {
+                aspectBtn.textContent = '4:3 aspect ratio: ' + (getAspect() ? 'On' : 'Off');
+            }
+            function getAspect() {
+                return localStorage.getItem('doomAspectRatio') !== '0';
+            }
+            aspectBtn.addEventListener('click', function () {
+                localStorage.setItem('doomAspectRatio', getAspect() ? '0' : '1');
+                renderAspect();
+            });
+            renderAspect();
+
             function showMain() {
                 logView.style.display = 'none';
                 main.style.display = 'flex';
@@ -457,7 +473,17 @@
                     try {
                         Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
                         Module.FS_createPreloadedFile('/', 'default.cfg', 'default.cfg', true, false);
-                        Module.FS_createPreloadedFile('/', 'chocolate-doom.cfg', 'chocolate-doom.cfg', true, false);
+                        // chocolate-doom.cfg is read synchronously so the saved aspect ratio can be applied.
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('GET', 'chocolate-doom.cfg', false);
+                        xhr.send();
+                        if (xhr.status !== 200 && xhr.status !== 0) throw new Error('chocolate-doom.cfg: HTTP ' + xhr.status);
+                        let cfg = xhr.responseText;
+                        const aspect = localStorage.getItem('doomAspectRatio');
+                        if (aspect === '0' || aspect === '1') {
+                            cfg = cfg.replace(/^aspect_ratio_correct\s+\d+/m, 'aspect_ratio_correct ' + aspect);
+                        }
+                        Module.FS.writeFile('/chocolate-doom.cfg', cfg);
                         console.log('Files loaded successfully');
                     } catch (e) {
                         console.error('Error loading files:', e);
