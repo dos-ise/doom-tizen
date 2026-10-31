@@ -487,7 +487,8 @@
                 "-config", "default.cfg",
                 "-extraconfig", "chocolate-doom.cfg",
                 "-width", GAME_WIDTH.toString(),
-                "-height", GAME_HEIGHT.toString()
+                "-height", GAME_HEIGHT.toString(),
+                "-savedir", "/save"
             ],
 
             preRun: [
@@ -505,6 +506,7 @@
                         const aspect = localStorage.getItem('doomAspectRatio') === '1' ? '1' : '0';
                         cfg = cfg.replace(/^aspect_ratio_correct\s+\d+/m, 'aspect_ratio_correct ' + aspect);
                         Module.FS.writeFile('/chocolate-doom.cfg', cfg);
+                        DoomSaves.start(Module.FS);
                         console.log('Files loaded successfully');
                     } catch (e) {
                         console.error('Error loading files:', e);
@@ -619,6 +621,7 @@
     </script>
 
     <script>if (typeof globalThis === 'undefined') { window.globalThis = window; }</script>
+    <script src="savesync.js"></script>
     <script async src="chocolate-doom.js"></script>
 </body>
 </html>
