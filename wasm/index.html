@@ -286,17 +286,22 @@
             }
 
             let textActive = false;
+            // Debug log (TV save-bug analysis): visible in the Options console panel.
+            function dbg(msg) { console.log('[save-dbg] ' + msg); }
             window.doomTextInputStart = function () {
                 textInput.value = '';
                 textActive = true;
+                dbg('text input START');
                 textInput.focus();
             };
             window.doomTextInputStop = function () {
+                dbg('text input STOP (textActive was ' + textActive + ')');
                 textActive = false;
                 textInput.blur();
             };
             // "Fertig" on the TV keyboard only closes it (blur); confirm the save name with Enter.
             textInput.addEventListener('blur', function () {
+                dbg('blur (textActive=' + textActive + ')');
                 if (!textActive) return;
                 textActive = false;
                 post(KEY_ENTER);
@@ -305,18 +310,24 @@
             // The TV IME's "Fertig" submits the form (keyCode 229 keydown, no blur), so catch submit too.
             document.getElementById('textform').addEventListener('submit', function (e) {
                 e.preventDefault();
+                dbg('submit (textActive=' + textActive + ')');
                 if (!textActive) return;
                 textActive = false;
                 post(KEY_ENTER);
                 document.getElementById('canvas').focus();
             });
             textInput.addEventListener('keydown', function (e) {
+                dbg('input keydown key=' + e.key + ' keyCode=' + e.keyCode);
                 const key = special[e.key] !== undefined ? special[e.key] : (e.keyCode === 13 ? KEY_ENTER : undefined);
                 if (key !== undefined) {
                     e.preventDefault();
                     post(key);
                 }
             });
+            // Log every key that reaches the page, incl. the remote OK after the keyboard closed.
+            window.addEventListener('keydown', function (e) {
+                dbg('page keydown key=' + e.key + ' keyCode=' + e.keyCode + ' target=' + (e.target && e.target.id));
+            }, true);
             textInput.addEventListener('input', function () {
                 const text = textInput.value;
                 textInput.value = '';
