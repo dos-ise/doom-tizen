@@ -70,6 +70,7 @@ RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0005-Close-Tizen-a
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0006-Use-TV-on-screen-keyboard-for-text-input-under-Emscripten.patch
 # Support QR code instead of "Read This!" help pages (see patches/)
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0007-Show-support-QR-code-instead-of-help-under-Emscripten.patch
+RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0008-show-options-as-html-settings-panel.patch
 
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
@@ -80,7 +81,7 @@ ENV EMSCRIPTEN_FLAGS="\
 -s ALLOW_MEMORY_GROWTH=0 \
 -s INITIAL_MEMORY=268435456 \
 -s STACK_SIZE=5242880 \
--s EXPORTED_FUNCTIONS=['_main','_doom_get_frames','_doom_post_key'] \
+-s EXPORTED_FUNCTIONS=['_main','_doom_get_frames','_doom_post_key','_doom_set_volume'] \
 -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','callMain','FS','FS_createPreloadedFile'] \
 -s MODULARIZE=0 \
 -s EXPORT_NAME='Module' \

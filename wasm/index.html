@@ -96,6 +96,72 @@
             font-size: 16px;
         }
 
+        /* Options panel (patch 0008): replaces the Chocolate Doom options menu on Tizen. */
+        #settings {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            font-family: sans-serif;
+            z-index: 300;
+        }
+
+        #settings h1 {
+            margin: 0 0 32px;
+            font-size: 48px;
+            color: #fc0;
+        }
+
+        #settings label {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 60%;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        #settings label input {
+            flex: 1;
+        }
+
+        #settings button {
+            margin: 8px;
+            padding: 12px 28px;
+            font-size: 22px;
+        }
+
+        #settings-log {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            height: 100%;
+        }
+
+        #logtext {
+            flex: 1;
+            width: 100%;
+            margin: 0 0 16px;
+            padding: 12px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            background: #111;
+            color: #0f0;
+            font-size: 16px;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
         /* Hidden text field: focusing it makes the TV show its on-screen keyboard (save-game names). */
         #textinput {
             position: absolute;
@@ -120,11 +186,35 @@
         <small>paypal.me/DennisOstermann</small>
         <small>Press any key to close</small>
     </div>
+    <div id="settings">
+        <div id="settings-main">
+            <h1>Options</h1>
+            <label>Sound effects volume <input type="range" id="sfxvol" min="0" max="15" value="8"></label>
+            <label>Music volume <input type="range" id="musvol" min="0" max="15" value="8"></label>
+            <button id="btn-log">Console log</button>
+            <button id="btn-back">Back</button>
+        </div>
+        <div id="settings-log">
+            <pre id="logtext" tabindex="0"></pre>
+            <button id="btn-log-back">Back</button>
+        </div>
+    </div>
 
     <script src="input.js"></script>
 
     <script>
         'use strict';
+
+        // Console capture for the options panel: keeps the last messages, even those logged before it opens.
+        const consoleLines = [];
+        ['log', 'info', 'warn', 'error'].forEach(function (name) {
+            const original = console[name].bind(console);
+            console[name] = function () {
+                consoleLines.push(name.toUpperCase() + ' ' + Array.prototype.map.call(arguments, String).join(' '));
+                if (consoleLines.length > 500) consoleLines.shift();
+                original.apply(null, arguments);
+            };
+        });
 
         // Overlay: browser rAF calls/s (main loop alive) and Doom engine frames/s (I_FinishUpdate).
         (function () {
@@ -202,6 +292,62 @@
                 window.addEventListener('keydown', close, true);
                 window.addEventListener('mousedown', close, true);
                 window.addEventListener('touchstart', close, true);
+            };
+        })();
+
+        // Options panel (patch 0008): called by M_Options. Sliders set the engine volume directly;
+        // "Console log" shows the captured console output in a scrollable view.
+        (function () {
+            const panel = document.getElementById('settings');
+            const main = document.getElementById('settings-main');
+            const logView = document.getElementById('settings-log');
+            const logText = document.getElementById('logtext');
+            const sfx = document.getElementById('sfxvol');
+            const music = document.getElementById('musvol');
+
+            function setVolume() {
+                if (typeof Module !== 'undefined' && Module._doom_set_volume) {
+                    Module._doom_set_volume(parseInt(sfx.value, 10), parseInt(music.value, 10));
+                }
+            }
+            sfx.addEventListener('input', setVolume);
+            music.addEventListener('input', setVolume);
+
+            function showMain() {
+                logView.style.display = 'none';
+                main.style.display = 'flex';
+                document.getElementById('btn-log').focus();
+            }
+            function showLog() {
+                logText.textContent = consoleLines.join('\n');
+                main.style.display = 'none';
+                logView.style.display = 'flex';
+                logText.scrollTop = logText.scrollHeight;
+                logText.focus();
+            }
+            function close() {
+                panel.style.display = 'none';
+                document.getElementById('canvas').focus();
+            }
+
+            document.getElementById('btn-log').addEventListener('click', showLog);
+            document.getElementById('btn-log-back').addEventListener('click', showMain);
+            document.getElementById('btn-back').addEventListener('click', close);
+
+            // Keys stay inside the panel so they do not reach the game. Escape and the TV Back key
+            // (10009) close the panel, or step back from the log view.
+            panel.addEventListener('keydown', function (e) {
+                e.stopPropagation();
+                if (e.key === 'Escape' || e.keyCode === 27 || e.keyCode === 10009) {
+                    e.preventDefault();
+                    if (logView.style.display === 'flex') showMain(); else close();
+                }
+            });
+
+            window.doomShowSettings = function () {
+                showMain();
+                panel.style.display = 'flex';
+                sfx.focus();
             };
         })();
 
