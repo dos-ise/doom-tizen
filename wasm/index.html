@@ -318,7 +318,8 @@
             });
             textInput.addEventListener('keydown', function (e) {
                 dbg('input keydown key=' + e.key + ' keyCode=' + e.keyCode);
-                const key = special[e.key] !== undefined ? special[e.key] : (e.keyCode === 13 ? KEY_ENTER : undefined);
+                // 65376 is the TV keyboard's "Fertig" key (seen in the save-dbg log); treat it as Enter.
+                const key = special[e.key] !== undefined ? special[e.key] : ((e.keyCode === 13 || e.keyCode === 65376) ? KEY_ENTER : undefined);
                 if (key !== undefined) {
                     e.preventDefault();
                     post(key);
