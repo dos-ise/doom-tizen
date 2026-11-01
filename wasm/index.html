@@ -177,6 +177,33 @@
             content: '\25B6  ';
         }
 
+        #settings-controller {
+            display: none;
+            flex-direction: column;
+            align-items: stretch;
+            width: 60%;
+        }
+
+        #controller-list {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        #controller-list button {
+            font-size: 20px;
+            letter-spacing: 0;
+            text-transform: none;
+            padding: 10px 20px;
+            text-align: left;
+        }
+
+        #controller-hint {
+            margin: 12px 0;
+            font-size: 20px;
+            color: #fc0;
+            text-align: center;
+        }
+
         #settings-log {
             display: none;
             flex-direction: column;
@@ -237,8 +264,16 @@
             <small>Game mode (selecting one restarts the game)</small>
             <div id="mode-list"></div>
             <small id="mode-hint" style="display:none"></small>
+            <button id="btn-controller">Controller</button>
             <button id="btn-log">Console log</button>
             <button id="btn-back">Back</button>
+        </div>
+        <div id="settings-controller">
+            <h1>Controller</h1>
+            <div id="controller-list"></div>
+            <small id="controller-hint" style="display:none"></small>
+            <button id="btn-controller-reset">Reset to default</button>
+            <button id="btn-controller-back">Back</button>
         </div>
         <div id="settings-log">
             <pre id="logtext" tabindex="0"></pre>
@@ -520,10 +555,18 @@
             }
             renderModes();
 
+            const controllerView = document.getElementById('settings-controller');
+            const controllerList = document.getElementById('controller-list');
+            const controllerHint = document.getElementById('controller-hint');
+
             function showMain() {
+                cancelGamepadCapture();
                 logView.style.display = 'none';
+                controllerView.style.display = 'none';
                 main.style.display = 'flex';
-                document.getElementById('btn-log').focus();
+                // First button, not the first item: A only activates buttons, so a slider must not get focus here.
+                const firstButton = main.querySelector('button');
+                if (firstButton) firstButton.focus();
             }
             function showLog() {
                 logText.textContent = consoleLines.join('\n');
@@ -532,21 +575,61 @@
                 logText.scrollTop = logText.scrollHeight;
                 logText.focus();
             }
+            function renderControllerList(focusAction) {
+                controllerList.innerHTML = '';
+                let focusBtn = null;
+                CONTROLLER_ACTION_ORDER.forEach(function (name) {
+                    const btn = document.createElement('button');
+                    const button = getGamepadButtonFor(name);
+                    btn.textContent = ACTION_LABELS[name] + ': ' + (button === null ? 'not bound' : gamepadButtonName(button));
+                    btn.addEventListener('click', function () { beginRebind(name); });
+                    controllerList.appendChild(btn);
+                    if (name === focusAction) focusBtn = btn;
+                });
+                const first = controllerList.firstChild;
+                if (focusBtn) focusBtn.focus(); else if (first) first.focus();
+            }
+            function beginRebind(name) {
+                controllerHint.textContent = 'Press a gamepad button for "' + ACTION_LABELS[name] + '" (Select to cancel)';
+                controllerHint.style.display = '';
+                startGamepadCapture(name, function (button) {
+                    controllerHint.style.display = 'none';
+                    if (button !== null) setGamepadButton(name, button);
+                    if (controllerView.style.display === 'flex') renderControllerList(name);
+                });
+            }
+            function showController() {
+                main.style.display = 'none';
+                controllerView.style.display = 'flex';
+                controllerHint.style.display = 'none';
+                renderControllerList(null);
+            }
             function close() {
+                cancelGamepadCapture();
                 panel.style.display = 'none';
                 document.getElementById('canvas').focus();
             }
 
+            document.getElementById('btn-controller').addEventListener('click', showController);
+            document.getElementById('btn-controller-back').addEventListener('click', showMain);
+            document.getElementById('btn-controller-reset').addEventListener('click', function () {
+                resetGamepadMap();
+                renderControllerList(null);
+            });
             document.getElementById('btn-log').addEventListener('click', showLog);
             document.getElementById('btn-log-back').addEventListener('click', showMain);
             document.getElementById('btn-back').addEventListener('click', close);
 
             // Keys stay inside the panel so they do not reach the game. Escape and the TV Back key
-            // (10009) close the panel, or step back from the log view.
-            // Remote navigation: Up/Down move between items, Left/Right change sliders, Enter activates.
+            // (10009) close the panel, or step back from a sub-view. Gamepad menu input (input.js)
+            // calls window.doomPanelNav with the same names, so keyboard and gamepad share one path.
+            function currentView() {
+                if (logView.style.display === 'flex') return logView;
+                if (controllerView.style.display === 'flex') return controllerView;
+                return main;
+            }
             function visibleItems() {
-                const view = logView.style.display === 'flex' ? logView : main;
-                return Array.prototype.slice.call(view.querySelectorAll('input, button, pre'));
+                return Array.prototype.slice.call(currentView().querySelectorAll('input, button, pre'));
             }
             function moveFocus(step) {
                 const items = visibleItems();
@@ -561,28 +644,51 @@
                     el.dispatchEvent(new Event('input'));
                 }
             }
+            // The TV can report A/B both as gamepad buttons and as Enter/10009 keys. Repeated
+            // confirm/back within this window is one press, so it is not handled twice.
+            const lastMenuPress = { confirm: 0, back: 0 };
+            function panelNav(name) {
+                // While waiting for a rebind, only Back is handled (cancels the capture).
+                if (isGamepadCapturing()) {
+                    if (name === 'back') cancelGamepadCapture();
+                    return;
+                }
+                if (name === 'confirm' || name === 'back') {
+                    const now = Date.now();
+                    if (now - lastMenuPress[name] < 250) return;
+                    lastMenuPress[name] = now;
+                }
+                if (name === 'up') moveFocus(-1);
+                else if (name === 'down') moveFocus(1);
+                else if (name === 'left') adjustSlider(-1);
+                else if (name === 'right') adjustSlider(1);
+                else if (name === 'confirm') {
+                    const el = document.activeElement;
+                    if (!el || !panel.contains(el)) {
+                        showMain();
+                    } else if (el.tagName === 'BUTTON') {
+                        el.click();
+                    }
+                }
+                else if (name === 'back') {
+                    if (logView.style.display === 'flex' || controllerView.style.display === 'flex') showMain();
+                    else close();
+                }
+            }
+            window.doomPanelNav = panelNav;
 
+            const KEY_NAMES = { 38: 'up', 40: 'down', 37: 'left', 39: 'right', 13: 'confirm', 27: 'back', 10009: 'back' };
             panel.addEventListener('keydown', function (e) {
                 e.stopPropagation();
-                const k = e.keyCode;
-                if (k === 38) { e.preventDefault(); moveFocus(-1); }
-                else if (k === 40) { e.preventDefault(); moveFocus(1); }
-                else if (k === 37) { e.preventDefault(); adjustSlider(-1); }
-                else if (k === 39) { e.preventDefault(); adjustSlider(1); }
-                else if (k === 13) {
-                    e.preventDefault();
-                    if (document.activeElement && document.activeElement.tagName === 'BUTTON') document.activeElement.click();
-                }
-                else if (e.key === 'Escape' || k === 27 || k === 10009) {
-                    e.preventDefault();
-                    if (logView.style.display === 'flex') showMain(); else close();
-                }
+                const name = KEY_NAMES[e.keyCode] || (e.key === 'Escape' ? 'back' : null);
+                if (!name) return;
+                e.preventDefault();
+                panelNav(name);
             });
 
             window.doomShowSettings = function () {
-                showMain();
                 panel.style.display = 'flex';
-                sfx.focus();
+                showMain();
             };
         })();
 
