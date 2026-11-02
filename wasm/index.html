@@ -301,11 +301,16 @@
         (function () {
             const dbgf = document.getElementById('dbgf');
             let frames = 0;
+            let loadingDone = false;
             function countFrame() { frames++; requestAnimationFrame(countFrame); }
             requestAnimationFrame(countFrame);
             let lastFrames = 0, lastGame = 0;
             setInterval(function () {
                 const g = (typeof Module !== 'undefined' && Module._doom_get_frames) ? Module._doom_get_frames() : 0;
+                if (g > 0 && !loadingDone) {
+                    loadingDone = true;
+                    Module.setStatus('');
+                }
                 dbgf.textContent = 'raf ' + (frames - lastFrames) + ' | game ' + (g - lastGame) + ' | ' + (performance.now() / 1000).toFixed(1) + 's';
                 lastFrames = frames;
                 lastGame = g;
@@ -846,13 +851,9 @@
             }
         };
 
-        // Blocks during game init. Returns once the SDL main loop is registered, so the
-        // status is hidden on the next frame, after the first game frame has been drawn.
+        // Blocks during game init; the overlay interval hides the status after the first game frame.
         function startGame() {
             Module.callMain(Module.arguments);
-            requestAnimationFrame(function () {
-                Module.setStatus('');
-            });
         }
 
         window.onerror = function (message, source, lineno, colno, error) {
