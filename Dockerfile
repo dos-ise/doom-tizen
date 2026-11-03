@@ -74,6 +74,8 @@ RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0007-Show-support-Q
 RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0008-show-options-as-html-settings-panel.patch
 # Timestamps in the graphics init to find startup stalls (see patches/)
 RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0009-Log-graphics-init-timestamps-under-Emscripten.patch
+# Give state actions explicit signatures for WebAssembly indirect calls.
+RUN cd crispy-doom && python3 /home/doom/doom-tizen/patches/0011-fix-action-callback-signatures.py
 # Build Crispy Doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/crispy-doom
 
