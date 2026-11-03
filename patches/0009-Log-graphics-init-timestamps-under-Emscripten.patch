@@ -1,17 +1,18 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Copilot App <223556219+Copilot@users.noreply.github.com>
 Date: Mon, 2 Nov 2026 16:10:00 +0100
-Subject: [PATCH] Log graphics init timestamps under Emscripten
+Subject: [PATCH] Log graphics renderer and init timings under Emscripten
 
 TMARK prints emscripten_get_now() (same time base as performance.now())
 at the key steps of I_InitGraphics/SetVideoMode and the first frames of
-I_FinishUpdate, to show where startup time goes.
+I_FinishUpdate, to show where startup time goes. Also print the selected
+SDL renderer driver and mark logical-size setup, clear, and first present.
 ---
- src/i_video.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ src/i_video.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
 diff --git a/src/i_video.c b/src/i_video.c
-index 6ff3b80..0ae174c 100644
+index 6ff3b80..b9e9b8bd 100644
 --- a/src/i_video.c
 +++ b/src/i_video.c
 @@ -23,6 +23,14 @@
@@ -69,9 +70,34 @@ index 6ff3b80..0ae174c 100644
  
      // If we could not find a matching render driver,
      // try again without hardware acceleration.
-@@ -1342,6 +1362,7 @@ static void SetVideoMode(void)
+@@ -1321,6 +1341,15 @@ static void SetVideoMode(void)
+                 SDL_GetError());
+     }
+ 
++#ifdef __EMSCRIPTEN__
++    {
++        SDL_RendererInfo ri;
++        if (SDL_GetRendererInfo(renderer, &ri) == 0)
++            printf("[c] renderer driver: %s flags 0x%x @%.0f ms\n",
++                   ri.name, ri.flags, emscripten_get_now());
++    }
++#endif
++
+     // Important: Set the "logical size" of the rendering context. At the same
+     // time this also defines the aspect ratio that is preserved while scaling
+     // and stretching the texture into the window.
+@@ -1335,13 +1364,16 @@ static void SetVideoMode(void)
+     // Force integer scales for resolution-independent rendering.
+ 
+     SDL_RenderSetIntegerScale(renderer, integer_scaling);
++    TMARK("logical size done");
+ 
+     // Blank out the full screen area in case there is any junk in
+     // the borders that won't otherwise be overwritten.
+ 
      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
      SDL_RenderClear(renderer);
++    TMARK("clear done");
      SDL_RenderPresent(renderer);
 +    TMARK("first present done");
  
@@ -104,4 +130,3 @@ index 6ff3b80..0ae174c 100644
      // (screen will be flipped after we set the palette)
 -- 
 2.43.0
-

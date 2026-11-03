@@ -849,8 +849,16 @@
                 requestAnimationFrame(function () {
                     requestAnimationFrame(function () {
                         setTimeout(function () {
-                    prepareWads().then(startGame);
-                }, 0);
+                            prepareWads().then(function () {
+                                Module.setStatus('Initializing graphics...');
+                                requestAnimationFrame(function () {
+                                    requestAnimationFrame(function () {
+                                        warmUpGl();
+                                        startGame();
+                                    });
+                                });
+                            });
+                        }, 0);
                     });
                 });
             },
@@ -876,6 +884,21 @@
         // Blocks during game init; the overlay interval hides the status after the first game frame.
         function startGame() {
             Module.callMain(Module.arguments);
+        }
+
+        function warmUpGl() {
+            const t0 = performance.now();
+            try {
+                const c = document.createElement('canvas');
+                c.width = c.height = 16;
+                const gl = c.getContext('webgl');
+                gl.clearColor(0, 0, 0, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+            } catch (e) {
+                console.error('[t] GL warm-up failed', e);
+            }
+            console.log('[t] GL warm-up took ' + Math.round(performance.now() - t0) + ' ms');
         }
 
         window.onerror = function (message, source, lineno, colno, error) {
