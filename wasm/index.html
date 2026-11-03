@@ -47,6 +47,14 @@
             text-shadow: 0 0 10px #0f0;
         }
 
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #spinner {
+            position: absolute; top: calc(50% + 40px); left: 50%;
+            width: 40px; height: 40px; margin-left: -20px;
+            border: 4px solid #0f0; border-top-color: transparent; border-radius: 50%;
+            animation: spin 1s linear infinite; will-change: transform; z-index: 100;
+        }
+
         /* Frame counter overlay, top right. */
         #dbgf {
             position: absolute;
@@ -246,6 +254,7 @@
 <body>
     <canvas id="canvas" tabindex="1"></canvas>
     <div id="status">Loading Doom...</div>
+    <div id="spinner"></div>
     <div id="dbgf"></div>
     <form id="textform" action="javascript:void(0)"><input id="textinput" type="text" autocomplete="off" autocapitalize="characters"></form>
     <div id="support">
@@ -286,6 +295,8 @@
     <script>
         'use strict';
 
+        let loadingDone = false;
+
         // Console capture for the options panel: keeps the last messages, even those logged before it opens.
         const consoleLines = [];
         ['log', 'info', 'warn', 'error'].forEach(function (name) {
@@ -301,7 +312,6 @@
         (function () {
             const dbgf = document.getElementById('dbgf');
             let frames = 0;
-            let loadingDone = false;
             function countFrame() { frames++; requestAnimationFrame(countFrame); }
             requestAnimationFrame(countFrame);
             let lastFrames = 0, lastGame = 0;
@@ -698,6 +708,7 @@
         })();
 
         const statusElement = document.getElementById('status');
+        const spinnerElement = document.getElementById('spinner');
         const canvasElement = document.getElementById('canvas');
 
         // Fit the canvas box to its own pixel aspect. The TV keyboard resizes the
@@ -805,12 +816,15 @@
             })(),
 
             setStatus: function (text) {
+                if (!text && !loadingDone) return;
                 if (text) {
                     console.log('Status:', text);
                     statusElement.textContent = text;
                     statusElement.style.display = 'block';
+                    spinnerElement.style.display = 'block';
                 } else {
                     statusElement.style.display = 'none';
+                    spinnerElement.style.display = 'none';
                 }
             },
 
