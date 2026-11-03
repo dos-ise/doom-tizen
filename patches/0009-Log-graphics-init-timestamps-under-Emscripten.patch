@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Copilot App <223556219+Copilot@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 16:10:00 +0100
+Subject: [PATCH] Log graphics init timestamps under Emscripten
+
+TMARK prints emscripten_get_now() (same time base as performance.now())
+at the key steps of I_InitGraphics/SetVideoMode and the first frames of
+I_FinishUpdate, to show where startup time goes.
+---
+ src/i_video.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/src/i_video.c b/src/i_video.c
+index 6ff3b80..0ae174c 100644
+--- a/src/i_video.c
++++ b/src/i_video.c
+@@ -23,6 +23,14 @@
+ #include "SDL.h"
+ #include "SDL_opengl.h"
+ 
++#ifdef __EMSCRIPTEN__
++#include <emscripten.h>
++#include <stdio.h>
++#define TMARK(s) printf("[c] " s " @%.0f ms\n", emscripten_get_now())
++#else
++#define TMARK(s) ((void) 0)
++#endif
++
+ #ifdef _WIN32
+ #ifndef WIN32_LEAN_AND_MEAN
+ #define WIN32_LEAN_AND_MEAN
+@@ -706,6 +714,10 @@ void I_FinishUpdate (void)
+     static int lasttic;
+     int tics;
+     int i;
++    static int fu_count = 0;
++
++    if (fu_count < 3)
++        TMARK("FinishUpdate start");
+ 
+     if (!initialized)
+         return;
+@@ -819,6 +831,12 @@ void I_FinishUpdate (void)
+ 
+     SDL_RenderPresent(renderer);
+ 
++    if (fu_count < 3)
++    {
++        TMARK("FinishUpdate end");
++        fu_count++;
++    }
++
+     // Restore background and undo the disk indicator, if it was drawn.
+     V_RestoreDiskBackground();
+ }
+@@ -1253,6 +1271,7 @@ static void SetVideoMode(void)
+     if (screen == NULL)
+     {
+         screen = SDL_CreateWindow(NULL, x, y, w, h, window_flags);
++        TMARK("window created");
+ 
+         if (screen == NULL)
+         {
+@@ -1297,6 +1316,7 @@ static void SetVideoMode(void)
+     }
+ 
+     renderer = SDL_CreateRenderer(screen, -1, renderer_flags);
++    TMARK("renderer created");
+ 
+     // If we could not find a matching render driver,
+     // try again without hardware acceleration.
+@@ -1342,6 +1362,7 @@ static void SetVideoMode(void)
+     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+     SDL_RenderClear(renderer);
+     SDL_RenderPresent(renderer);
++    TMARK("first present done");
+ 
+     // Create the 8-bit paletted and the 32-bit RGBA screenbuffer surfaces.
+ 
+@@ -1395,6 +1416,7 @@ static void SetVideoMode(void)
+                                 SDL_PIXELFORMAT_ARGB8888,
+                                 SDL_TEXTUREACCESS_STREAMING,
+                                 SCREENWIDTH, SCREENHEIGHT);
++    TMARK("texture created");
+ 
+     // Workaround for SDL 2.0.14+ alt-tab bug (taken from Doom Retro via Prboom-plus and Woof)
+ #if defined(_WIN32)
+@@ -1438,6 +1460,8 @@ void I_InitGraphics(void)
+ 
+     SetSDLVideoDriver();
+ 
++    TMARK("I_InitGraphics start");
++
+     if (SDL_Init(SDL_INIT_VIDEO) < 0) 
+     {
+         I_Error("Failed to initialize video: %s", SDL_GetError());
+@@ -1463,6 +1487,7 @@ void I_InitGraphics(void)
+     // on configuration.
+     AdjustWindowSize();
+     SetVideoMode();
++    TMARK("SetVideoMode done");
+ 
+     // Start with a clear black screen
+     // (screen will be flipped after we set the palette)
+-- 
+2.43.0
+

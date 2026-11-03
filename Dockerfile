@@ -71,7 +71,8 @@ RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0006-Use-TV-on-scr
 # Support QR code instead of "Read This!" help pages (see patches/)
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0007-Show-support-QR-code-instead-of-help-under-Emscripten.patch
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0008-show-options-as-html-settings-panel.patch
-
+# Timestamps in the graphics init to find startup stalls (see patches/)
+RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0009-Log-graphics-init-timestamps-under-Emscripten.patch
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 
