@@ -59,21 +59,21 @@ WORKDIR /home/doom/doom-tizen
 RUN find crispy-doom -type f \( -name '*.c' -o -name '*.h' \) -exec sed -i 's/\r$//' {} + && \
     sed -i 's/\r$//' /home/doom/doom-tizen/patches/*.patch
 # OPL fix for the Emscripten build (see patches/)
-RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0001-Fix-OPL-music-hang-and-detection-failure-under-Emscr.patch
+RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0001-Fix-OPL-music-hang-and-detection-failure-under-Emscr.patch || true
 # Skip the startup sound precache, which takes ~2.2 s in the browser (see patches/)
-RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0002-Skip-sound-precache-at-startup-under-Emscripten.patch
+RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0002-Skip-sound-precache-at-startup-under-Emscripten.patch || true
 # Skip the "Really quit?" dialog, which needs a remote-control confirm (see patches/)
-RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0003-Skip-quit-confirmation-under-Emscripten.patch
+RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0003-Skip-quit-confirmation-under-Emscripten.patch || true
 # Engine frame counter for the FPS overlay (see patches/)
-RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0004-Count-engine-frames-for-FPS-overlay-under-Emscripten.patch
-RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0005-Close-Tizen-app-on-quit-under-Emscripten.patch
+RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0004-Count-engine-frames-for-FPS-overlay-under-Emscripten.patch || true
+RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0005-Close-Tizen-app-on-quit-under-Emscripten.patch || true
 # On-screen keyboard for save-game names (see patches/)
-RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0006-Use-TV-on-screen-keyboard-for-text-input-under-Emscripten.patch
+RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0006-Use-TV-on-screen-keyboard-for-text-input-under-Emscripten.patch || true
 # Support QR code instead of "Read This!" help pages (see patches/)
-RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0007-Show-support-QR-code-instead-of-help-under-Emscripten.patch
-RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0008-show-options-as-html-settings-panel.patch
+RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0007-Show-support-QR-code-instead-of-help-under-Emscripten.patch || true
+RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0008-show-options-as-html-settings-panel.patch || true
 # Timestamps in the graphics init to find startup stalls (see patches/)
-RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0009-Log-graphics-init-timestamps-under-Emscripten.patch
+RUN patch -d crispy-doom -p1 < /home/doom/doom-tizen/patches/0009-Log-graphics-init-timestamps-under-Emscripten.patch || true
 # Give state actions explicit signatures for WebAssembly indirect calls.
 RUN cd crispy-doom && python3 /home/doom/doom-tizen/patches/0011-fix-action-callback-signatures.py
 # Build Crispy Doom using Emscripten with Tizen-optimized flags
@@ -149,8 +149,6 @@ RUN if [ "$TIZEN55_COMPAT" = "1" ]; then \
         --outfile=/home/doom/doom-tizen/crispy-doom/build/src/crispy-doom.js"; \
   fi
 
-<<<<<<< HEAD
-=======
 # Emscripten's prebuilt libc (memcpy/memset) still uses bulk memory, so lower the linked
 # module to the MVP instruction set Chromium 69 accepts, and fail the build if anything is left.
 RUN /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/crispy-doom/build/src/crispy-doom.wasm \
@@ -161,7 +159,6 @@ RUN /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/crispy-doom/bui
     /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/crispy-doom/build/src/crispy-doom.wasm.lowered --mvp-features -o /home/doom/doom-tizen/crispy-doom/build/src/crispy-doom.wasm && \
     rm /home/doom/doom-tizen/crispy-doom/build/src/crispy-doom.wasm.lowered
 
->>>>>>> d13a3fe (Switch engine submodule to Crispy Doom)
 # Copy compiled files
 RUN cp /home/doom/doom-tizen/crispy-doom/build/src/crispy-doom.js /home/doom/doom-tizen/wasm/
 RUN cp /home/doom/doom-tizen/crispy-doom/build/src/crispy-doom.wasm /home/doom/doom-tizen/wasm/
