@@ -83,8 +83,10 @@ For Tizen 5.5 (Chromium 69) TVs, build with the compatibility flag:
 docker build --build-arg TIZEN55_COMPAT=1 -t doom-tizen .
 ```
 
-This enables the esbuild JS lowering step. It is **off by default** because it
-can break input handling on newer engines.
+This enables the Chromium 69 compatibility build: `WASM_BIGINT=0`, the legacy
+WASM compiler flags and MVP lowering with `wasm-opt`, plus esbuild JS lowering.
+All compatibility changes are **off by default**; the normal WGT keeps the
+standard WASM features and does not run `wasm-opt`.
 
 ---
 

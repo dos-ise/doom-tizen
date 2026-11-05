@@ -54,9 +54,23 @@ WORKDIR /home/doom
 COPY --chown=doom . ./doom-tizen
 
 WORKDIR /home/doom/doom-tizen
-RUN git submodule update --init --recursive
-# Windows checkouts may contain CRLF files; restore LF from the index so the patches apply
-RUN git -C chocolate-doom checkout -- . && sed -i 's/\r$//' /home/doom/doom-tizen/patches/*.patch
+RUN if [ -f chocolate-doom/CMakeLists.txt ]; then \
+      echo "Using Chocolate Doom source from the build context"; \
+    else \
+      git submodule update --init --recursive; \
+    fi
+# Windows checkouts may contain CRLF files; restore LF so the patches apply
+RUN if git -C chocolate-doom rev-parse --is-inside-work-tree >/dev/null 2>&1; then \
+      git -C chocolate-doom checkout -- .; \
+    else \
+      find chocolate-doom -type f \( -name '*.c' -o -name '*.h' \) \
+        -exec sed -i 's/\r$//' {} +; \
+    fi && sed -i 's/\r$//' /home/doom/doom-tizen/patches/*.patch
+# Linked worktrees can copy host-only .git pointers into the Docker context.
+RUN if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then rm -f .git; fi && \
+    if ! git -C chocolate-doom rev-parse --is-inside-work-tree >/dev/null 2>&1; then \
+      rm -f chocolate-doom/.git; \
+    fi
 # OPL fix for the Emscripten build (see patches/)
 RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0001-Fix-OPL-music-hang-and-detection-failure-under-Emscr.patch
 # Skip the startup sound precache, which takes ~2.2 s in the browser (see patches/)
@@ -76,6 +90,8 @@ RUN git -C chocolate-doom apply /home/doom/doom-tizen/patches/0009-Log-graphics-
 # Build chocolate-doom using Emscripten with Tizen-optimized flags
 WORKDIR /home/doom/doom-tizen/chocolate-doom
 
+ARG TIZEN55_COMPAT=0
+
 # Optimierte Flags f�r Tizen (OHNE preload-file)
 ENV EMSCRIPTEN_FLAGS="\
 -s WASM=1 \
@@ -91,20 +107,20 @@ ENV EMSCRIPTEN_FLAGS="\
 -s FORCE_FILESYSTEM=1 \
 -s EXIT_RUNTIME=0 \
 -s ASSERTIONS=0 \
--s DISABLE_EXCEPTION_CATCHING=1 \
--s WASM_BIGINT=0 \
--s USE_SDL_MIXER=2"
+-s DISABLE_EXCEPTION_CATCHING=1"
 
-# Tizen 5.5 (2020 sets) runs Chromium 69: no bulk memory, non-trapping float-to-int or BigInt
-# at the JS/WASM boundary (WASM_BIGINT=0 above). Sign-extension ops do work there, but they are
-# lowered as well so the module stays within the MVP feature set. Current Emscripten refuses
-# MIN_CHROME_VERSION below 85, so the features are switched off directly instead.
-ENV WASM_COMPAT="-mno-bulk-memory -mno-bulk-memory-opt -mno-sign-ext -mno-nontrapping-fptoint"
-ENV CFLAGS="-O3 -flto $WASM_COMPAT -s USE_SDL_MIXER=2 -DHAVE_DECL_STRCASECMP=1 -DHAVE_DECL_STRNCASECMP=1 -DHAVE_DIRENT_H=1"
-ENV CXXFLAGS="-O3 -flto $WASM_COMPAT"
-ENV LDFLAGS="$EMSCRIPTEN_FLAGS $WASM_COMPAT -O3 -flto"
-
-RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
+RUN bash -lc 'source /home/doom/emsdk/emsdk_env.sh && \
+    if [ "$TIZEN55_COMPAT" = "1" ]; then \
+      WASM_BIGINT=0; \
+      WASM_COMPAT="-mno-bulk-memory -mno-bulk-memory-opt -mno-sign-ext -mno-nontrapping-fptoint"; \
+    else \
+      WASM_BIGINT=1; \
+      WASM_COMPAT=""; \
+    fi && \
+    EMSCRIPTEN_FLAGS="$EMSCRIPTEN_FLAGS -s WASM_BIGINT=$WASM_BIGINT" && \
+    CFLAGS="-O3 -flto $WASM_COMPAT -s USE_SDL_MIXER=2 -DHAVE_DECL_STRCASECMP=1 -DHAVE_DECL_STRNCASECMP=1 -DHAVE_DIRENT_H=1" && \
+    CXXFLAGS="-O3 -flto $WASM_COMPAT" && \
+    LDFLAGS="$EMSCRIPTEN_FLAGS $WASM_COMPAT -O3 -flto" && \
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
 		-DEMSCRIPTEN=1 \
@@ -112,22 +128,28 @@ RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
         -DHAVE_DECL_STRNCASECMP=1 \
         -DENABLE_SDL2_MIXER=ON \
         -DENABLE_SDL2_NET=OFF \
-        -DCMAKE_C_FLAGS=\"$CFLAGS\" \
-        -DCMAKE_CXX_FLAGS=\"$CXXFLAGS\" \
-        -DCMAKE_EXE_LINKER_FLAGS=\"$LDFLAGS\" \
+        -DCMAKE_C_FLAGS="$CFLAGS" \
+        -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
+        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS" \
         -G Ninja \
         -S . \
-        -B build"
-
-RUN bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
-    emmake ninja -C build"
+        -B build && \
+    emmake ninja -C build && \
+    if [ "$TIZEN55_COMPAT" = "1" ]; then \
+      /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm \
+        --enable-bulk-memory --enable-bulk-memory-opt --enable-sign-ext \
+        --enable-nontrapping-float-to-int --enable-mutable-globals \
+        --llvm-memory-copy-fill-lowering --signext-lowering --llvm-nontrapping-fptoint-lowering \
+        -o /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered && \
+      /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered \
+        --mvp-features -o /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm && \
+      rm /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered; \
+    fi'
 
 # The generated JS uses syntax newer than Chromium 69 (optional chaining, ??=, private fields).
 # Lower it with esbuild, using the node that ships with emsdk. It also reads globalThis on its first
 # line, which Chromium only has from 71 and esbuild does not polyfill: the banner defines it.
-# Only needed for Tizen 5.5 (Chromium 69). Disabled by default because it can break
-# input handling on newer engines; enable with --build-arg TIZEN55_COMPAT=1.
-ARG TIZEN55_COMPAT=0
+# Only needed for Tizen 5.5 (Chromium 69); enable with --build-arg TIZEN55_COMPAT=1.
 RUN if [ "$TIZEN55_COMPAT" = "1" ]; then \
     bash -lc "source /home/doom/emsdk/emsdk_env.sh && \
     mkdir -p /home/doom/lower && cd /home/doom/lower && \
@@ -137,16 +159,6 @@ RUN if [ "$TIZEN55_COMPAT" = "1" ]; then \
         --banner:js='window.globalThis || (window.globalThis = window);' \
         --outfile=/home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js"; \
   fi
-
-# Emscripten's prebuilt libc (memcpy/memset) still uses bulk memory, so lower the linked
-# module to the MVP instruction set Chromium 69 accepts, and fail the build if anything is left.
-RUN /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm \
-        --enable-bulk-memory --enable-bulk-memory-opt --enable-sign-ext \
-        --enable-nontrapping-float-to-int --enable-mutable-globals \
-        --llvm-memory-copy-fill-lowering --signext-lowering --llvm-nontrapping-fptoint-lowering \
-        -o /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered && \
-    /home/doom/emsdk/upstream/bin/wasm-opt /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered --mvp-features -o /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm && \
-    rm /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.wasm.lowered
 
 # Copy compiled files
 RUN cp /home/doom/doom-tizen/chocolate-doom/build/src/chocolate-doom.js /home/doom/doom-tizen/wasm/

@@ -67,7 +67,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             TIZEN55_COMPAT=0
-      # Second variant for 2020 TVs (Tizen 5.5, Chromium 69): JS lowered with esbuild.
+      # Tizen 5.5 variant: legacy WASM flags/MVP lowering and JS lowering.
       - name: Build and push Docker image (Tizen 5.5)
         uses: docker/build-push-action@v3
         with:
