@@ -1,12 +1,12 @@
 # GitLab CI/CD pipeline for Doom Tizen
 #
-# Builds the Docker image (which compiles Chocolate Doom to WebAssembly
+# Builds the Docker image (which compiles Crispy Doom to WebAssembly
 # with Emscripten and packages it as a Tizen widget) and extracts the
 # resulting Doom.wgt as a pipeline artifact.
 #
 # Requirements:
 #   - A GitLab runner with the "docker" executor (or shell + Docker CLI)
-#   - The chocolate-doom submodule must be fetched (GIT_SUBMODULE_STRATEGY)
+#   - The crispy-doom submodule must be fetched (GIT_SUBMODULE_STRATEGY)
 #
 # The build downloads Tizen Studio and Emscripten and compiles the game,
 # so it can take 30-60 minutes on the first run.
@@ -15,7 +15,7 @@ stages:
   - build
 
 variables:
-  # Fetch the chocolate-doom submodule so it is part of the Docker build context
+  # Fetch the crispy-doom submodule so it is part of the Docker build context
   GIT_SUBMODULE_STRATEGY: recursive
   # Standard Docker-in-Docker TLS setup
   DOCKER_TLS_CERTDIR: "/certs"

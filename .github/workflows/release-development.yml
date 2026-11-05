@@ -189,7 +189,7 @@ jobs:
           - Fixed canvas stretching so the game fits the TV screen correctly
           - Performance: low internal render resolution, fixed key bindings, new TV controls
           - Tizen 5.5 (Chromium 69) compatibility
-          - Updated chocolate-doom submodule"
+          - Updated crispy-doom submodule"
           else
             RELEASE_TAG="v${{ env.TIMESTAMP }}-${{ env.BRANCH }}"
             RELEASE_NAME="v${{ env.TIMESTAMP }}-${{ env.BRANCH }}"

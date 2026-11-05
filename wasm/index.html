@@ -104,7 +104,7 @@
             font-size: 16px;
         }
 
-        /* Options panel (patch 0008): replaces the Chocolate Doom options menu on Tizen. */
+        /* Options panel (patch 0008): replaces the Crispy Doom options menu on Tizen. */
         #settings {
             position: absolute;
             top: 0;
@@ -327,7 +327,7 @@
             }, 1000);
         })();
 
-        // Text input bridge for Chocolate Doom (patch 0006): I_StartTextInput/I_StopTextInput
+        // Text input bridge for Crispy Doom (patch 0006): I_StartTextInput/I_StopTextInput
         // call these, and keys typed on the TV keyboard are sent back to the engine.
         (function () {
             const textInput = document.getElementById('textinput');
@@ -492,7 +492,7 @@
             sfx.addEventListener('input', setVolume);
             music.addEventListener('input', setVolume);
 
-            // Stored in localStorage and written into chocolate-doom.cfg before the next start (see preRun).
+            // Stored in localStorage and written into crispy-doom.cfg before the next start (see preRun).
             const aspectBtn = document.getElementById('btn-aspect');
             function renderAspect() {
                 aspectBtn.textContent = '4:3 aspect ratio: ' + (getAspect() ? 'On' : 'Off');
@@ -762,7 +762,7 @@
                 "-window",
                 "-nogui",
                 "-config", "default.cfg",
-                "-extraconfig", "chocolate-doom.cfg",
+                "-extraconfig", "crispy-doom.cfg",
                 "-width", GAME_WIDTH.toString(),
                 "-height", GAME_HEIGHT.toString(),
                 "-savedir", '/save' + (SAVE_SLOT ? '-' + SAVE_SLOT : '')
@@ -774,15 +774,15 @@
                     try {
                         if (!FREE_MODE && !HACX_MODE) Module.FS_createPreloadedFile('/', 'doom1.wad', 'doom1.wad', true, false);
                         Module.FS_createPreloadedFile('/', 'default.cfg', 'default.cfg', true, false);
-                        // chocolate-doom.cfg is read synchronously so the saved aspect ratio can be applied.
+                        // crispy-doom.cfg is read synchronously so the saved aspect ratio can be applied.
                         const xhr = new XMLHttpRequest();
-                        xhr.open('GET', 'chocolate-doom.cfg', false);
+                        xhr.open('GET', 'crispy-doom.cfg', false);
                         xhr.send();
-                        if (xhr.status !== 200 && xhr.status !== 0) throw new Error('chocolate-doom.cfg: HTTP ' + xhr.status);
+                        if (xhr.status !== 200 && xhr.status !== 0) throw new Error('crispy-doom.cfg: HTTP ' + xhr.status);
                         let cfg = xhr.responseText;
                         const aspect = localStorage.getItem('doomAspectRatio') === '1' ? '1' : '0';
                         cfg = cfg.replace(/^aspect_ratio_correct\s+\d+/m, 'aspect_ratio_correct ' + aspect);
-                        Module.FS.writeFile('/chocolate-doom.cfg', cfg);
+                        Module.FS.writeFile('/crispy-doom.cfg', cfg);
                         DoomSaves.start(Module.FS, SAVE_SLOT);
                         console.log('Files loaded successfully');
                     } catch (e) {
@@ -923,6 +923,6 @@
 
     <script>if (typeof globalThis === 'undefined') { window.globalThis = window; }</script>
     <script src="savesync.js"></script>
-    <script async src="chocolate-doom.js"></script>
+    <script async src="crispy-doom.js"></script>
 </body>
 </html>

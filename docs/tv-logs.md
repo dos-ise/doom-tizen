@@ -1,7 +1,7 @@
 # Getting logs from the Doom app on the TV
 
 The app runs in the Tizen web runtime (Content shell). Its console output, including
-the Chocolate Doom `stdout` and the JS `console.log` lines, is available through the
+the Crispy Doom `stdout` and the JS `console.log` lines, is available through the
 Chromium remote debugging port that `sdb` exposes on the TV.
 
 Replace `<TV-IP>` with the TV address (for example `192.168.178.159`). The sdb

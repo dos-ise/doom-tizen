@@ -1,14 +1,14 @@
 # Doom for Samsung Tizen TVs
 
-A WebAssembly-powered port of Chocolate Doom packaged as a Samsung Tizen TV application.  
-This project uses Chocolate Doom compiled to WebAssembly via Emscripten and wraps it into a Tizen widget (`.wgt`) that runs directly on Samsung Smart TVs.
+A WebAssembly-powered port of Crispy Doom packaged as a Samsung Tizen TV application.
+This project uses Crispy Doom compiled to WebAssembly via Emscripten and wraps it into a Tizen widget (`.wgt`) that runs directly on Samsung Smart TVs.
 
 ---
 
 ## Features
 
 - Runs entirely on the TV (no streaming required)
-- Based on Chocolate Doom (faithful to the original)
+- Based on Crispy Doom (faithful to the original)
 - Includes Doom Shareware (doom1.wad) by default
 - Supports Samsung TV remote control mapping
 - Optimized for Samsung Tizen TV devices
@@ -61,7 +61,7 @@ build.bat
 ```
 
 This will:
-1. Build the Docker image with Chocolate Doom compiled to WebAssembly
+1. Build the Docker image with Crispy Doom compiled to WebAssembly
 2. Package it as a Tizen widget
 3. Extract `Doom.wgt` to the current directory
 
@@ -70,6 +70,9 @@ This will:
 If you prefer to build manually:
 
 ```bash
+# Fetch the Crispy Doom source before building
+git submodule update --init --recursive
+
 # Build the Docker image
 docker build -t doom-tizen .
 
@@ -151,7 +154,7 @@ Higher values (e.g. `1280` × `720`) look sharper but cost more performance.
 
 ```
 doom-tizen/
-├── chocolate-doom/     # Chocolate Doom as Git submodule
+├── crispy-doom/        # Crispy Doom as Git submodule
 ├── wasm/              # WebAssembly build output
 │   ├── doom1.wad      # Doom Shareware WAD
 │   ├── default.cfg    # Doom configuration
@@ -175,8 +178,8 @@ doom-tizen/
 ## Credits
 
 - **Doom** © id Software
-- **Chocolate Doom** - https://github.com/chocolate-doom/chocolate-doom
-- **Emscripten Support** - This project is made possible by the excellent work of **jbaicoianu (James Baicoianu)** who added Emscripten build target support to Chocolate Doom:  
+- **Crispy Doom** - https://github.com/fabiangreffrath/crispy-doom
+- **Emscripten Support** - This project is made possible by the excellent work of **jbaicoianu (James Baicoianu)** who added Emscripten build target support to Chocolate Doom, which Crispy Doom is based on:
   [PR #1717 - Emscripten build target support](https://github.com/chocolate-doom/chocolate-doom/pull/1717)
 - **Tizen Installer** - https://github.com/Jellyfin2Samsung/Samsung-Jellyfin-Installer
 - **Emscripten** - https://emscripten.org/
@@ -186,6 +189,6 @@ doom-tizen/
 ## License
 
 This project respects the licenses of all included software:
-- Chocolate Doom is licensed under GPL v2
+- Crispy Doom is licensed under GPL v2
 - Doom Shareware is freely redistributable
 - Original Doom game data requires a legitimate copy

@@ -1,25 +1,12 @@
-From ec0cc64170f2eb5c9f395a2a8f8cfaea1de5c609 Mon Sep 17 00:00:00 2001
-From: Dennis <ostermann3k@googlemail.com>
-Date: Sat, 31 Oct 2026 09:43:43 +0100
-Subject: [PATCH] Show options as HTML settings panel on Tizen
-
-Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>
----
- src/doom/m_menu.c |  5 +++++
- src/i_input.c     | 12 ++++++++++++
- src/i_system.c    |  6 ++++++
- 3 files changed, 23 insertions(+)
-
 diff --git a/src/doom/m_menu.c b/src/doom/m_menu.c
-index 76e98184..8db1b46b 100644
+index 2673a890..eef2a184 100644
 --- a/src/doom/m_menu.c
 +++ b/src/doom/m_menu.c
-@@ -985,6 +985,11 @@ void M_DrawOptions(void)
+@@ -1673,6 +1673,10 @@ static void M_DrawCrispness4(void)
  
  void M_Options(int choice)
  {
 +#ifdef __EMSCRIPTEN__
-+    // Settings are shown as an HTML panel (see doomShowSettings in index.html).
 +    EM_ASM(if (window.doomShowSettings) window.doomShowSettings());
 +    return;
 +#endif
@@ -27,25 +14,24 @@ index 76e98184..8db1b46b 100644
  }
  
 diff --git a/src/i_input.c b/src/i_input.c
-index f3c47676..d82bcd34 100644
+index 43ce2580..d956d3ac 100644
 --- a/src/i_input.c
 +++ b/src/i_input.c
-@@ -31,6 +31,9 @@
- #include "i_input.h"
- #include "m_argv.h"
- #include "m_config.h"
-+// Weak: s_sound.c is not linked into the Heretic/Hexen targets.
-+__attribute__((weak)) void S_SetSfxVolume(int volume);
-+__attribute__((weak)) void S_SetMusicVolume(int volume);
+@@ -37,6 +37,9 @@
+ #include "crispy.h"
  
  #ifdef __EMSCRIPTEN__
- // Injects a key press from the TV on-screen keyboard (called from index.html).
-@@ -49,6 +52,15 @@ EMSCRIPTEN_KEEPALIVE void doom_post_key (int key)
++__attribute__((weak)) void S_SetSfxVolume(int volume);
++__attribute__((weak)) void S_SetMusicVolume(int volume);
++
+ EMSCRIPTEN_KEEPALIVE void doom_post_key (int key)
+ {
+     event_t event;
+@@ -50,6 +53,14 @@ EMSCRIPTEN_KEEPALIVE void doom_post_key (int key)
      event.type = ev_keyup;
      D_PostEvent(&event);
  }
 +
-+// Sets SFX/music volume (0-15) from the HTML settings panel in index.html.
 +EMSCRIPTEN_KEEPALIVE void doom_set_volume (int sfx, int music)
 +{
 +    if (S_SetSfxVolume)
@@ -57,10 +43,10 @@ index f3c47676..d82bcd34 100644
  
  static const int scancode_translate_table[] = SCANCODE_TO_KEYS_ARRAY;
 diff --git a/src/i_system.c b/src/i_system.c
-index a652801a..d49cbb92 100644
+index 54b81074..1ae8b0c9 100644
 --- a/src/i_system.c
 +++ b/src/i_system.c
-@@ -69,6 +69,12 @@ __attribute__((weak)) EMSCRIPTEN_KEEPALIVE void doom_post_key (int key)
+@@ -66,6 +66,12 @@ __attribute__((weak)) EMSCRIPTEN_KEEPALIVE void doom_post_key (int key)
  {
      (void)key;
  }
@@ -73,6 +59,3 @@ index a652801a..d49cbb92 100644
  #endif
  
  
--- 
-2.56.0.windows.4
-

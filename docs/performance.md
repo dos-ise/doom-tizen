@@ -10,7 +10,7 @@
 The game was rendered at the full TV resolution (`-width window.innerWidth
 -height window.innerHeight`). On a 4K Tizen TV this means the software renderer
 had to fill ~8.3 million pixels per frame, which is far too slow for a
-single-threaded software renderer like Chocolate Doom's.
+single-threaded software renderer like Crispy Doom's.
 
 ---
 
@@ -50,18 +50,18 @@ clean 2× integer scale on Full-HD TVs and still looks sharp on 4K.
 
 ### 3. Disable smooth pixel scaling
 
-`wasm/chocolate-doom.cfg`:
+`wasm/crispy-doom.cfg`:
 
 ```
 smooth_pixel_scaling 0
 ```
 
-This disables Chocolate Doom's bilinear smoothing of the internal framebuffer,
+This disables Crispy Doom's bilinear smoothing of the internal framebuffer,
 which saves a full-screen texture pass per frame.
 
 ### 4. Audio settings
 
-`wasm/chocolate-doom.cfg`:
+`wasm/crispy-doom.cfg`:
 
 ```
 snd_samplerate 22050
@@ -88,23 +88,23 @@ hidden`) so the upscale is done by the TV's GPU, not the CPU.
 ```
 
 `ALLOW_MEMORY_GROWTH=0` avoids the expensive memory-growth reallocations that
-can cause frame hitches. 256 MB is plenty for Chocolate Doom (the shareware WAD
+can cause frame hitches. 256 MB is plenty for Crispy Doom (the shareware WAD
 is ~4 MB).
 
 ---
 
 ## Important: which config file holds which settings
 
-Chocolate Doom splits its config into two files (see `m_config.c`):
+Crispy Doom splits its config into two files (see `m_config.c`):
 
 | File | Collection | Loaded via | Contains |
 |------|-----------|------------|----------|
 | `default.cfg` | `doom_defaults_list` (line 121) | `-config` | Movement/weapon key bindings, mouse, joystick, volume |
-| `chocolate-doom.cfg` | `extra_defaults_list` (line 701) | `-extraconfig` | Video (smooth_pixel_scaling, aspect_ratio), audio (snd_samplerate, snd_cachesize), menu/map keys, gamepad |
+| `crispy-doom.cfg` | `extra_defaults_list` | `-extraconfig` | Video (smooth_pixel_scaling, aspect_ratio), audio (snd_samplerate, snd_cachesize), menu/map keys, gamepad |
 
 **The performance settings (`smooth_pixel_scaling`, `snd_samplerate`,
 `snd_cachesize`) belong to the EXTRA config and are only active when
-`-extraconfig chocolate-doom.cfg` is passed.** After the PR #4 revert removed
+`-extraconfig crispy-doom.cfg` is passed.** After the PR #4 revert removed
 `-extraconfig`, these settings were silently inactive. They were re-enabled in
 PR #12 (the config contains only the original key bindings that are known to
 work).

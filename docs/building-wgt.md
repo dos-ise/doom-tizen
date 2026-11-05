@@ -8,7 +8,7 @@ This document explains how the Tizen widget (`Doom.wgt`) is built and packaged.
 
 The build has three stages:
 
-1. **Compile** Chocolate Doom to WebAssembly with Emscripten
+1. **Compile** Crispy Doom to WebAssembly with Emscripten
 2. **Package** the WebAssembly output as a Tizen web application
 3. **Sign** and package it into a `.wgt` file with the Tizen Studio CLI
 
@@ -20,10 +20,10 @@ not require a local Tizen Studio installation.
 ## Build pipeline
 
 ```
-chocolate-doom (C source, submodule)
+crispy-doom (C source, submodule)
         │  emcmake / emmake (Emscripten)
         ▼
-chocolate-doom.js + chocolate-doom.wasm
+crispy-doom.js + crispy-doom.wasm
         │  copied into wasm/
         ▼
 wasm/ (index.html, input.js, default.cfg, doom1.wad, ...)
@@ -60,6 +60,9 @@ This runs the full pipeline and extracts `Doom.wgt` to the current directory.
 ### Manual build
 
 ```bash
+# Fetch the Crispy Doom source before building
+git submodule update --init --recursive
+
 # Build the Docker image
 docker build -t doom-tizen .
 
@@ -118,7 +121,7 @@ Docker-in-Docker. The `Doom.wgt` is published as a job artifact.
 
 ## What's inside the WGT
 
-The widget contains the WebAssembly build of Chocolate Doom plus the web
+The widget contains the WebAssembly build of Crispy Doom plus the web
 frontend:
 
 ```
@@ -129,9 +132,9 @@ widget/
     ├── index.html      # Game launcher (resolution, launch args)
     ├── input.js        # Remote control / gamepad handler
     ├── default.cfg     # Doom key bindings
-    ├── chocolate-doom.cfg  # Extended config (display/audio)
-    ├── chocolate-doom.js   # Emscripten JS glue
-    ├── chocolate-doom.wasm # Compiled game
+    ├── crispy-doom.cfg     # Extended config (display/audio)
+    ├── crispy-doom.js      # Emscripten JS glue
+    ├── crispy-doom.wasm    # Compiled game
     └── doom1.wad       # Doom Shareware
 ```
 

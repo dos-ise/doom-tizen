@@ -1,5 +1,5 @@
 // Persists savegames in the Tizen wgt-private directory so they survive app restarts.
-// Chocolate Doom writes saves to MEMFS /save (via -savedir). Saves are restored at startup
+// Crispy Doom writes saves to MEMFS /save (via -savedir). Saves are restored at startup
 // and changed files are copied back periodically and on page hide. No-op without the Tizen API.
 (function () {
     'use strict';

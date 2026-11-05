@@ -1,8 +1,8 @@
 diff --git a/src/i_system.c b/src/i_system.c
-index d4d113b6..cbf9afaf 100644
+index 2ae3d721..4fe99770 100644
 --- a/src/i_system.c
 +++ b/src/i_system.c
-@@ -259,10 +259,22 @@ void I_BindVariables(void)
+@@ -269,10 +269,22 @@ void I_BindVariables(void)
  // I_Quit
  //
  

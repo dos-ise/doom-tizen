@@ -1,8 +1,8 @@
 diff --git a/src/i_sdlsound.c b/src/i_sdlsound.c
-index 18a51a09..e3814a55 100644
+index b07865d1..3b8adbf7 100644
 --- a/src/i_sdlsound.c
 +++ b/src/i_sdlsound.c
-@@ -835,11 +835,6 @@ static void I_SDL_PrecacheSounds(sfxinfo_t *sounds, int num_sounds)
+@@ -906,11 +906,6 @@ static void I_SDL_PrecacheSounds(sfxinfo_t *sounds, int num_sounds)
          GetSfxLumpName(&sounds[i], namebuf, sizeof(namebuf));
  
          sounds[i].lumpnum = W_CheckNumForName(namebuf);

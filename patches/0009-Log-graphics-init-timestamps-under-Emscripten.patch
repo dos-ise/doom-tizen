@@ -1,18 +1,5 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Copilot App <223556219+Copilot@users.noreply.github.com>
-Date: Mon, 2 Nov 2026 16:10:00 +0100
-Subject: [PATCH] Log graphics renderer and init timings under Emscripten
-
-TMARK prints emscripten_get_now() (same time base as performance.now())
-at the key steps of I_InitGraphics/SetVideoMode and the first frames of
-I_FinishUpdate, to show where startup time goes. Also print the selected
-SDL renderer driver and mark logical-size setup, clear, and first present.
----
- src/i_video.c | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
-
 diff --git a/src/i_video.c b/src/i_video.c
-index 6ff3b80..b9e9b8bd 100644
+index ce06b508..3d8bfee2 100644
 --- a/src/i_video.c
 +++ b/src/i_video.c
 @@ -23,6 +23,14 @@
@@ -30,7 +17,7 @@ index 6ff3b80..b9e9b8bd 100644
  #ifdef _WIN32
  #ifndef WIN32_LEAN_AND_MEAN
  #define WIN32_LEAN_AND_MEAN
-@@ -706,6 +714,10 @@ void I_FinishUpdate (void)
+@@ -770,6 +778,10 @@ void I_FinishUpdate (void)
      static int lasttic;
      int tics;
      int i;
@@ -41,7 +28,7 @@ index 6ff3b80..b9e9b8bd 100644
  
      if (!initialized)
          return;
-@@ -819,6 +831,12 @@ void I_FinishUpdate (void)
+@@ -927,6 +939,12 @@ void I_FinishUpdate (void)
  
      SDL_RenderPresent(renderer);
  
@@ -51,10 +38,10 @@ index 6ff3b80..b9e9b8bd 100644
 +        fu_count++;
 +    }
 +
-     // Restore background and undo the disk indicator, if it was drawn.
-     V_RestoreDiskBackground();
- }
-@@ -1253,6 +1271,7 @@ static void SetVideoMode(void)
+     if (crispy->uncapped && !singletics)
+     {
+         // Limit framerate
+@@ -1524,6 +1542,7 @@ static void SetVideoMode(void)
      if (screen == NULL)
      {
          screen = SDL_CreateWindow(NULL, x, y, w, h, window_flags);
@@ -62,7 +49,7 @@ index 6ff3b80..b9e9b8bd 100644
  
          if (screen == NULL)
          {
-@@ -1297,6 +1316,7 @@ static void SetVideoMode(void)
+@@ -1572,6 +1591,7 @@ static void SetVideoMode(void)
      }
  
      renderer = SDL_CreateRenderer(screen, -1, renderer_flags);
@@ -70,7 +57,7 @@ index 6ff3b80..b9e9b8bd 100644
  
      // If we could not find a matching render driver,
      // try again without hardware acceleration.
-@@ -1321,6 +1341,15 @@ static void SetVideoMode(void)
+@@ -1596,6 +1616,15 @@ static void SetVideoMode(void)
                  SDL_GetError());
      }
  
@@ -86,7 +73,7 @@ index 6ff3b80..b9e9b8bd 100644
      // Important: Set the "logical size" of the rendering context. At the same
      // time this also defines the aspect ratio that is preserved while scaling
      // and stretching the texture into the window.
-@@ -1335,13 +1364,16 @@ static void SetVideoMode(void)
+@@ -1610,13 +1639,16 @@ static void SetVideoMode(void)
      // Force integer scales for resolution-independent rendering.
  
      SDL_RenderSetIntegerScale(renderer, integer_scaling);
@@ -101,9 +88,9 @@ index 6ff3b80..b9e9b8bd 100644
      SDL_RenderPresent(renderer);
 +    TMARK("first present done");
  
+ #ifndef CRISPY_TRUECOLOR
      // Create the 8-bit paletted and the 32-bit RGBA screenbuffer surfaces.
- 
-@@ -1395,6 +1416,7 @@ static void SetVideoMode(void)
+@@ -1705,6 +1737,7 @@ static void SetVideoMode(void)
                                  SDL_PIXELFORMAT_ARGB8888,
                                  SDL_TEXTUREACCESS_STREAMING,
                                  SCREENWIDTH, SCREENHEIGHT);
@@ -111,7 +98,7 @@ index 6ff3b80..b9e9b8bd 100644
  
      // Workaround for SDL 2.0.14+ alt-tab bug (taken from Doom Retro via Prboom-plus and Woof)
  #if defined(_WIN32)
-@@ -1438,6 +1460,8 @@ void I_InitGraphics(void)
+@@ -1815,6 +1848,8 @@ void I_InitGraphics(void)
  
      SetSDLVideoDriver();
  
@@ -120,13 +107,11 @@ index 6ff3b80..b9e9b8bd 100644
      if (SDL_Init(SDL_INIT_VIDEO) < 0) 
      {
          I_Error("Failed to initialize video: %s", SDL_GetError());
-@@ -1463,6 +1487,7 @@ void I_InitGraphics(void)
+@@ -1851,6 +1886,7 @@ void I_InitGraphics(void)
      // on configuration.
      AdjustWindowSize();
      SetVideoMode();
 +    TMARK("SetVideoMode done");
  
+ #ifndef CRISPY_TRUECOLOR
      // Start with a clear black screen
-     // (screen will be flipped after we set the palette)
--- 
-2.43.0

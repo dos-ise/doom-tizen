@@ -14,9 +14,9 @@ diff --git a/src/i_system.c b/src/i_system.c
 index 1a2b3c4d..5e6f7a8b 100644
 --- a/src/i_system.c
 +++ b/src/i_system.c
-@@ -40,6 +40,17 @@
- #define DEFAULT_RAM 16 /* MiB */
- #define MIN_RAM     4  /* MiB */
+@@ -47,6 +47,17 @@
+ #define DEFAULT_RAM 16*2 /* MiB [crispy] */
+ #define MIN_RAM     4*4  /* MiB [crispy] */
  
 +#ifdef __EMSCRIPTEN__
 +#include <emscripten.h>
@@ -36,7 +36,7 @@ diff --git a/src/i_video.c b/src/i_video.c
 index 6ff3b80e..a7db4c18 100644
 --- a/src/i_video.c
 +++ b/src/i_video.c
-@@ -713,6 +713,11 @@ void I_FinishUpdate (void)
+@@ -779,6 +779,11 @@ void I_FinishUpdate (void)
      if (noblit)
          return;
  
@@ -50,4 +50,3 @@ index 6ff3b80e..a7db4c18 100644
          if (SDL_GetTicks() > last_resize_time + RESIZE_DELAY)
 -- 
 2.43.0
-
