@@ -1,5 +1,6 @@
 # Doom Tizen v1.20
 
+- Add high-resolution textures and widescreen support through Crispy Doom.
 - Switch the game engine to Crispy Doom and update its WebAssembly integration.
 - Add a Tizen 5.5-compatible widget build for 2020 Samsung TVs.
 - Add controller button remapping in the settings.
