@@ -29,6 +29,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       # For versioned releases, write the version into the widget manifests so the packaged .wgt reports it
       # (the Apps2Samsung catalog reads the version from config.xml). The input is passed via env, not inlined.
       - name: Set widget version from release input
