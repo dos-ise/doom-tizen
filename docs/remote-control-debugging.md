@@ -1,5 +1,8 @@
 # TV Remote Control Regression – Debugging Report
 
+> Historical note: this investigation describes the former Chocolate Doom
+> submodule; the project now builds Crispy Doom.
+
 **Status:** Resolved ✅
 **Date:** 2026-10-08
 **Affected versions:** All builds after merging PR #4 (commit `0fb13e0`)

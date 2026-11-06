@@ -4,6 +4,13 @@ echo Building and extracting Doom.wgt from Docker
 echo ================================================
 echo.
 
+echo [0/6] Initializing Crispy Doom submodule...
+git submodule update --init --recursive
+if errorlevel 1 (
+    echo ERROR: Failed to initialize Git submodules!
+    exit /b 1
+)
+
 echo [1/6] Building Docker image...
 docker build -t doom-tizen .
 if errorlevel 1 (
