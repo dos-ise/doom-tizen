@@ -165,31 +165,18 @@ jobs:
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.event.inputs.version }}
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            RELEASE_TAG="v${{ github.event.inputs.version }}"
-            RELEASE_NAME="v${{ github.event.inputs.version }}"
+          if [ -n "$VERSION" ]; then
+            RELEASE_TAG="v$VERSION"
+            RELEASE_NAME="v$VERSION"
             PRERELEASE=""
-            NOTES="# Doom Tizen v${{ github.event.inputs.version }}
-
-          - Ensure your Samsung TV is running Tizen OS version 5.5 or higher.
-
-          - Use Doom.wgt for newer TVs and Doom-tizen55.wgt for 2020 TVs (Tizen 5.5, Chromium 69).
-
-          ## What's Changed:
-
-          - Game modes in Options: Standard, Chex, Free (freedoom1) and HacX, selected from a vertical list with D-pad (Up/Down to choose, OK to select)
-          - Chex, Free and HacX WADs are downloaded on first select and cached on the TV; they are mutually exclusive with each other
-          - Separate save games per game mode
-          - Save games on the TV: on-screen keyboard for save names; the remote's Done key now confirms the name and saves
-          - Save name input: remote Back cancels input cleanly, OK/Enter works in the text field
-          - Widescreen is now the default aspect ratio; 4:3 can be selected in Options (restart the game to apply)
-          - New HTML Options panel: music and sound volume, aspect ratio toggle, console log, remote navigation
-          - PayPal QR code overlay in the Read This! menu for supporting the project
-          - Fixed canvas stretching so the game fits the TV screen correctly
-          - Performance: low internal render resolution, fixed key bindings, new TV controls
-          - Tizen 5.5 (Chromium 69) compatibility
-          - Updated crispy-doom submodule"
+            RELEASE_NOTES_FILE="CHANGELOG-v${VERSION}.md"
+            if [ ! -f "$RELEASE_NOTES_FILE" ]; then
+              echo "::error::Missing release notes file: $RELEASE_NOTES_FILE"
+              exit 1
+            fi
+            NOTES="$(cat "$RELEASE_NOTES_FILE")"
           else
             RELEASE_TAG="v${{ env.TIMESTAMP }}-${{ env.BRANCH }}"
             RELEASE_NAME="v${{ env.TIMESTAMP }}-${{ env.BRANCH }}"

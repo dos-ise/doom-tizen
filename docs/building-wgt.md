@@ -104,6 +104,9 @@ inputs:
 - **version** – release version (e.g. `1.0`). Empty = timestamped pre-release.
 - **tizen55** – `true` builds the Tizen 5.5 variant (`TIZEN55_COMPAT=1`).
 
+Versioned releases use the matching `CHANGELOG-v<version>.md` file as their
+GitHub release notes.
+
 ```bash
 # Trigger a versioned release build
 gh workflow run release-development.yml --ref main -f version=1.0
