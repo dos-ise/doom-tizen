@@ -92,7 +92,7 @@
     }
 
     const DoomSaves = {
-        // slot is '' for the regular game, otherwise a per-mode suffix (chex, free, hacx).
+        // slot is '' for the regular game, otherwise a per-mode suffix (free, hacx).
         saveDirFor: function (slot) {
             return '/save' + (slot ? '-' + slot : '');
         },

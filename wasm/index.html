@@ -400,7 +400,7 @@
             };
         })();
 
-        // Chex and Free mode WADs are downloaded once from the repo's wads/ folder and cached in IndexedDB.
+        // Free and HacX mode WADs are downloaded once from the repo's wads/ folder and cached in IndexedDB.
         const WADS_BASE_URL = 'https://raw.githubusercontent.com/dos-ise/doom-tizen/main/wads/';
 
         function requestToPromise(req) {
@@ -438,7 +438,7 @@
         }
 
         // Runs before the engine starts. Free mode writes freedoom1.wad as the IWAD; HacX mode writes hacx.wad as the IWAD;
-        // Chex mode adds chex.wad as a PWAD. If a download fails, the game falls back to doom1.wad (Free/HacX) or the regular game (Chex).
+        // If a download fails, the game falls back to doom1.wad.
         function prepareWads() {
             if (HACX_MODE) {
                 return ensureWad('hacx.wad').then(function (bytes) {
@@ -464,14 +464,7 @@
                     });
                 });
             }
-            if (!CHEX_MODE) return Promise.resolve();
-            return ensureWad('chex.wad').then(function (bytes) {
-                Module.FS.writeFile('/chex.wad', bytes);
-                Module.arguments.push('-file', 'chex.wad');
-            }).catch(function (e) {
-                console.error('Chex mode disabled for this start:', e);
-                Module.setStatus('Chex mode unavailable, starting Doom');
-            });
+            return Promise.resolve();
         }
 
         // Options panel (patch 0008): called by M_Options. Sliders set the engine volume directly;
@@ -508,16 +501,15 @@
             });
             renderAspect();
 
-            // One selection for the mode. Chex, Free and HacX are mutually exclusive; Standard turns them all off.
-            // Free needs freedoom1.wad as IWAD, HacX needs hacx.wad as IWAD, Chex needs doom1.wad.
+            // One selection for the mode.             Free and HacX are mutually exclusive; Standard turns them off.
+                        // Free needs freedoom1.wad as IWAD, HacX needs hacx.wad as IWAD.
             // Each mode downloads its WAD from wads/ in this repo on first select, then the page reloads with that mode.
             const modes = {
                 standard: { key: null, label: 'Standard' },
-                chex: { key: 'doomChexMode', label: 'Chex', wad: 'chex.wad' },
                 free: { key: 'doomFreeMode', label: 'Free', wad: 'freedoom1.wad' },
                 hacx: { key: 'doomHacxMode', label: 'HacX', wad: 'hacx.wad' }
             };
-            const modeOrder = ['standard', 'chex', 'free', 'hacx'];
+            const modeOrder = ['standard', 'free', 'hacx'];
             const modeList = document.getElementById('mode-list');
             const modeHint = document.getElementById('mode-hint');
             let modeBusy = false;
@@ -740,10 +732,9 @@
         // Read once at load; applied on restart.
         const FREE_MODE = localStorage.getItem('doomFreeMode') === '1';
         const HACX_MODE = localStorage.getItem('doomHacxMode') === '1';
-        const CHEX_MODE = localStorage.getItem('doomChexMode') === '1';
         const IWAD = HACX_MODE ? 'hacx.wad' : FREE_MODE ? 'freedoom1.wad' : 'doom1.wad';
         // Each mode keeps its own saves (/save-<slot> in MEMFS, savegames-<slot> on the TV).
-        const SAVE_SLOT = HACX_MODE ? 'hacx' : FREE_MODE ? 'free' : CHEX_MODE ? 'chex' : '';
+        const SAVE_SLOT = HACX_MODE ? 'hacx' : FREE_MODE ? 'free' : '';
 
         let lastPrint = performance.now();
         function stamp(text) {
